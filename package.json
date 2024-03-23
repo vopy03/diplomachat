@@ -5,6 +5,8 @@
   "description": "Websocket Chat Example",
   "license": "MIT",
   "dependencies": {
+    "miller-rabin": "^4.0.1",
+    "prime-number-generator": "^1.0.0",
     "ws": "^8.13.0"
   },
   "readmeFilename": "README.md"
