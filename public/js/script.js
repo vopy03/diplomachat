@@ -1,14 +1,17 @@
 var keys = {};
-var sharedKey = 0;
+var sharedKeys = [];
 var recipientKey = 0;
 var params = "";
 var recipients = [];
+var userNames = { example: { login: "www", displayName: "SOME NAME" } };
+var ownLoginHash = "";
 
 const CHAR_RETURN = 13;
 
 const socket = new WebSocket("wss://" + window.location.host);
 const chat = document.getElementById("chat");
 const senderInput = document.getElementById("sender");
+const displayName = document.getElementById("displayName");
 const setSenderButton = document.getElementById("setSender");
 const recipientInput = document.getElementById("recipient");
 const msg = document.getElementById("msg");
@@ -18,10 +21,32 @@ var isTyping = false;
 var senderTyping = false;
 msg.focus();
 
+var funqueue = [];
+
+document
+  .querySelector("emoji-picker")
+  .addEventListener("emoji-click", (event) => {
+    console.log(event.detail);
+    msg.value += event.detail.unicode;
+  });
+
+var dropdownMenu = document.querySelector(".dropdown-menu");
+
+// Add event listener to the dropdown menu
+dropdownMenu.addEventListener("click", function (event) {
+  // Stop event propagation to prevent the dropdown from closing
+  event.stopPropagation();
+});
+
 const writeLine = (text) => {
   const line = document.createElement("div");
   line.innerHTML = `<p>${text}</p>`;
   chat.appendChild(line);
+};
+var wrapFunctionQueue = function (fn, context, params) {
+  return function () {
+    fn.apply(context, params);
+  };
 };
 
 const sendTypingNotification = async () => {
@@ -82,8 +107,26 @@ const sendMessage = async (
   recipient = recipientInput.value.trim(),
   message = msg.value.trim()
 ) => {
+  if (type == "message" && !message) {
+    showNotification("Please enter a message.");
+    return;
+  }
+  if(type == 'send_disconnect_notification') {
+    const payload = JSON.stringify({
+      type,
+      sender: sender,
+      recipients
+    });
+    socket.send(payload);
+    console.log(payload);
+    return;
+  }
   sender = await sha256(senderInput.value.trim());
   recipient = await sha256(recipientInput.value.trim());
+  if (sender == recipient) {
+    showNotification("You can't send a message to yourself!", "warning");
+    return;
+  }
   // if recipient not in list of recipients - send public key
   if (!recipients.includes(recipient)) {
     const payload = JSON.stringify({
@@ -93,16 +136,26 @@ const sendMessage = async (
       key: Number(keys.public),
     });
     socket.send(payload);
-    recipients.push(recipient);
+    funqueue.push(
+      wrapFunctionQueue(sendMessage, this, [type, sender, recipient, message])
+    );
     return;
   }
+  
   message = msg.value.trim();
+  console.log(msg);
+  console.log(message);
+  message = JSON.stringify({
+    sender: senderInput.value,
+    displayName: displayName.value,
+    message: message,
+  });
   writeLine(`You to ${recipientInput.value.trim()}: ${message}`);
-  message = await encryptData(message, sharedKey);
+  message = await encryptData(message, sharedKeys[recipient]);
   console.log(message);
   message = arrayBufferToString(message);
   console.log(message);
-  console.log(stringToArrayBuffer(message))
+  console.log(stringToArrayBuffer(message));
   const params = { prime: 0, generator: 0 };
   if (sender && recipient && message) {
     const payload = JSON.stringify({
@@ -115,13 +168,19 @@ const sendMessage = async (
     socket.send(payload);
     msg.value = "";
   } else {
-    alert("Please fill in all fields.");
+    showNotification("Please fill in all fields.");
   }
 };
 
 // Function to handle setting the sender code
 const setSender = async () => {
-  const sender = await sha256(senderInput.value.trim());
+  // if sender is empty or has 3 or less symbols
+  let sender = senderInput.value.trim();
+  if (!sender || sender.length < 3) {
+    showNotification("Please enter a valid sender code.", "info");
+    return;
+  }
+  sender = await sha256(senderInput.value.trim());
   if (sender) {
     const payload = JSON.stringify({ type: "set_sender", sender });
     socket.send(payload);
@@ -129,40 +188,69 @@ const setSender = async () => {
     setSenderButton.disabled = true;
     senderInput.classList.add("disabled");
     setSenderButton.classList.add("disabled");
-    writeLine(`Sender code set: ${sender}`);
+    showNotification(`Sender code set: ${sender}`);
   } else {
-    alert("Please enter a valid sender code.");
+    showNotification("Please enter a valid sender code.");
   }
 };
 
 setSenderButton.addEventListener("click", setSender);
 
 socket.addEventListener("open", () => {
-  writeLine("connected");
+  // writeLine("connected");
+  showNotification("Connected to websocket", "success");
   getPublicVars();
 });
 
 socket.addEventListener("close", () => {
-  writeLine("closed");
+  showNotification("Disconnected from websocket. Reload page.", "warning");
 });
 
 socket.addEventListener("message", async ({ data }) => {
   // chack if is JSON string and check if type is "typing"
+  console.log(data);
   if (isJSON(data)) {
     data = JSON.parse(data);
     console.log(data);
     if (data.type === "message") {
-      console.log('From ' + data.sender + ': ' + data.message);
+      console.log("From " + data.sender + ": " + data.message);
       data.message = stringToArrayBuffer(data.message);
-      data.message = await decryptData(data.message, sharedKey);
-      console.log('From ' + data.sender + ': ' + data.message);
-      writeLine('From ' + data.sender + ': ' + data.message)
-      return;
+      data.message = await decryptData(data.message, sharedKeys[data.sender]);
+      let message = "";
+      console.log(data.message);
+      if (isJSON(data.message)) {
+        message = JSON.parse(data.message);
+        userNames[data.sender] = {
+          login: message.sender,
+          displayName: message.displayName,
+        };
+
+        message = message.message;
+        let sender;
+        if (userNames[data.sender]) {
+          sender = userNames[data.sender].displayName;
+          if (!sender) {
+            sender = userNames[data.sender].login;
+          }
+        }
+        console.log("From " + sender + ": " + message);
+        writeLine("From " + sender + ": " + message);
+      }
+        return;
     }
     if (data.type === "typing") {
       senderTyping = true;
     } else if (data.type === "stopped typing") {
       senderTyping = false;
+    }
+    if (data.type === "set_sender") {
+      if (!data.status) {
+        setSenderButton.disabled = false;
+        senderInput.disabled = false;
+      } else {
+        ownLoginHash = data.sender;
+      }
+      showNotification(data.message);
     }
     if (data.type === "public_vars") {
       params = data.params;
@@ -170,11 +258,21 @@ socket.addEventListener("message", async ({ data }) => {
       params.iv = hexStringToArrayBuffer(params.iv);
       return;
     }
+    if (data.type === "disconnect_notification") {
+      let name = "";
+      if (userNames[data.sender]) {
+        name = userNames[data.sender].displayName;
+        if (!name) {
+          name = userNames[data.sender].login;
+        }
+      }
+      showNotification(name + " disconnected.");
+    }
     if (data.type === "public_key_exchange") {
       console.log(data);
       recipientKey = data.key;
-      sharedKey = await getSharedKey(recipientKey, keys.private);
-      if(!recipients.includes(data.sender)) {
+      sharedKeys[data.sender] = await getSharedKey(recipientKey, keys.private);
+      if (!recipients.includes(data.sender)) {
         socket.send(
           JSON.stringify({
             type: "public_key_exchange",
@@ -182,17 +280,20 @@ socket.addEventListener("message", async ({ data }) => {
             recipient: data.sender,
             key: Number(keys.public),
           })
-          );
-          recipients.push(data.sender);
-          writeLine(`Shared key ${sharedKey}`);
-        } else {
-          writeLine(`Shared key ${sharedKey}`)
-        }
-          return;
+        );
+        recipients.push(data.sender);
+        showNotification(`Shared key ${sharedKeys[data.sender]}`);
+      } else {
+        showNotification(`Shared key ${sharedKeys[data.sender]}`);
+      }
+      if (funqueue.length > 0) {
+        funqueue.shift()();
+      }
+      return;
     }
     updateTypingNotify(data);
   } else {
-      writeLine(data);
+    writeLine(data);
   }
 });
 
@@ -206,7 +307,16 @@ function updateTypingNotify(data) {
   let sender = data.sender;
   const isSenderTypingDiv = document.getElementById("isSenderTyping");
   if (senderTyping) {
-    isSenderTypingDiv.innerHTML = "Sender " + sender + " is typing...";
+    let name='';
+    if (userNames[sender]) {
+      name = userNames[sender].displayName;
+      if (!name) {
+        name = userNames[sender].login;
+      }
+    } else {
+      name = sender;
+    }
+    isSenderTypingDiv.innerHTML = "Sender " + name + " is typing...";
   } else {
     isSenderTypingDiv.innerHTML = "";
   }
@@ -281,78 +391,41 @@ async function getSharedKey(publicKey, privateKey) {
 
 sendButton.addEventListener("click", () => sendMessage());
 
-// Generate a random encryption key
-// var key = forge.random.getBytesSync(32); // 256-bit key
-
-// Message to encrypt
-// var message = "Hello, Forge!";
-
-// // Encrypt the message
-// var encryptedMessage = encryptMessage(message, key);
-// console.log("Encrypted Message:", encryptedMessage);
-
-// // Decrypt the message
-// var decryptedMessage = decryptMessage(encryptedMessage, key);
-// console.log("Decrypted Message:", decryptedMessage);
-
-// // Function to encrypt a message using AES
-// function encryptMessage(message, key) {
-//   var cipher = forge.cipher.createCipher("AES-CBC", key);
-//   cipher.start({ iv: forge.random.getBytesSync(16) });
-//   cipher.update(forge.util.createBuffer(message, "utf8"));
-//   cipher.finish();
-//   return forge.util.encode64(cipher.output.getBytes());
-// }
-
-// // Function to decrypt a message using AES
-// function decryptMessage(encryptedMessage, key) {
-//   try {
-//     var decipher = forge.cipher.createDecipher("AES-CBC", key);
-//     decipher.start({ iv: forge.random.getBytesSync(16) });
-//     decipher.update(forge.util.createBuffer(encryptedMessage, "base64")); // Use 'base64' encoding
-//     decipher.finish();
-//     return decipher.output.toString("utf8");
-//   } catch (error) {
-//     console.error("Error decrypting message:", error);
-//     return null; // Handle decryption error gracefully
-//   }
-// }
-
 // Convert hexadecimal key to ArrayBuffer
 function hexStringToArrayBuffer(hexString) {
   const bytes = [];
   for (let i = 0; i < hexString.length; i += 2) {
-      bytes.push(parseInt(hexString.substr(i, 2), 16));
+    bytes.push(parseInt(hexString.substr(i, 2), 16));
   }
   return new Uint8Array(bytes).buffer;
 }
 
 // Encrypt plaintext data with the encryption key and IV
 async function encryptData(plaintext, key) {
-  key = await getAESEncryptionKey(key)
+  key = await getAESEncryptionKey(key);
   const encodedData = new TextEncoder().encode(plaintext);
 
   const encryptedData = await window.crypto.subtle.encrypt(
-      {
-          name: "AES-GCM",
-          iv: params.iv, // Use the provided IV
-      },
-      key,
-      encodedData
+    {
+      name: "AES-GCM",
+      iv: params.iv, // Use the provided IV
+    },
+    key,
+    encodedData
   );
   return encryptedData;
 }
 
 // Decrypt ciphertext data with the encryption key and IV
 async function decryptData(ciphertext, key) {
-  key = await getAESEncryptionKey(key)
+  key = await getAESEncryptionKey(key);
   const decryptedData = await window.crypto.subtle.decrypt(
-      {
-          name: "AES-GCM",
-          iv: params.iv, // Use the same IV used during encryption
-      },
-      key,
-      ciphertext
+    {
+      name: "AES-GCM",
+      iv: params.iv, // Use the same IV used during encryption
+    },
+    key,
+    ciphertext
   );
   return new TextDecoder().decode(decryptedData);
 }
@@ -369,17 +442,6 @@ function stringToArrayBuffer(string) {
   return uint8Array.buffer;
 }
 
-// Convert an ArrayBuffer to a string of numbers
-function arrayBufferToNumberString(arrayBuffer) {
-  const uint8Array = new Uint8Array(arrayBuffer);
-  return Array.from(uint8Array).join(" ");
-}
-
-// Convert a string of numbers to an ArrayBuffer
-function numberStringToArrayBuffer(numberString) {
-  
-}
-
 async function getAESEncryptionKey(key) {
   return await window.crypto.subtle.importKey(
     "raw",
@@ -387,25 +449,74 @@ async function getAESEncryptionKey(key) {
     { name: "AES-GCM" },
     false,
     ["encrypt", "decrypt"]
-);
+  );
 }
 
-// Example usage
-// Example usage
-// (async () => {
-//   // Define the encryption key
-//   const keyHex = "b9b21209718fdb250df368efdb120747586fd5679ae76f9789bef89339df1737";
-//   const encryptionKey = await getAESEncryptionKey(keyHex)
+document.getElementById("showWarning").addEventListener("click", function () {
+  showNotification("This is a warning notification!", "warning");
+});
+
+document.getElementById("showSuccess").addEventListener("click", function () {
+  showNotification("This is a success notification!", "success");
+});
+
+document.getElementById("showInfo").addEventListener("click", function () {
+  showNotification("This is an info notification!", "info");
+});
+
+document.getElementById("showDanger").addEventListener("click", function () {
+  showNotification("This is a danger notification!", "danger");
+});
+
+function showNotification(message, type) {
+  const notification = document.createElement("div");
+  notification.classList.add("notification", type);
+
+  const content = document.createElement("span");
+  content.classList.add("notification-content");
+  content.innerText = message;
+  notification.appendChild(content);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.classList.add("close-btn");
+  closeBtn.innerHTML = "&times;";
+  closeBtn.addEventListener("click", function () {
+    notification.remove();
+  });
+  notification.appendChild(closeBtn);
+
+  document.getElementById("notificationContainer").appendChild(notification);
+
+  setTimeout(function () {
+    notification.style.display = "block";
+    setTimeout(function () {
+      notification.classList.add("show");
+      setTimeout(function () {
+        notification.classList.remove("show");
+        setTimeout(function () {
+          notification.remove();
+        }, 500);
+      }, 5000);
+    }, 100);
+  }, 100);
+}
+
+window.addEventListener("beforeunload", function (e) {
+  // Cancel the event
+  e.preventDefault();
+
+  sendMessage("send_disconnect_notification", ownLoginHash, '', '');
+});
 
 
-//   // Example plaintext
-//   const plaintext = "Hello, world!";
-
-//   // Encrypt plaintext
-//   const ciphertext = await encryptData(plaintext, encryptionKey);
-//   console.log("Encrypted:", ciphertext);
-
-//   // Decrypt ciphertext
-//   const decryptedText = await decryptData(ciphertext, encryptionKey);
-//   console.log("Decrypted:", decryptedText);
-// })();.
+function updateUsersList() {
+  let usersList = document.getElementById("usersList");
+  usersList.innerHTML = "";
+  for (let i = 0; i < recipients.length; i++) {
+    let user = recipients[i];
+    let userElement = document.createElement("div");
+    userElement.classList.add("user");
+    userElement.innerHTML = userNames[user].login;
+    usersList.appendChild(userElement);
+  }
+}

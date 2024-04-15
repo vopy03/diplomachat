@@ -29,7 +29,11 @@ function changeParams() {
 }
 
 const server = https.createServer(options, (req, res) => {
-  let filePath = "./public" + req.url;
+  let filePath = req.url;
+  if (!filePath.includes("node_modules")) {
+    filePath = "./public" + req.url;
+  }
+  // if filepath has "node_modules"
 
   if (filePath === "./public/") {
     filePath = "./public/index.html"; // Serve index.html by default from the public directory
@@ -44,9 +48,20 @@ const server = https.createServer(options, (req, res) => {
     case ".css":
       contentType = "text/css";
       break;
+    case ".svg":
+      contentType = "image/svg+xml";
+      break;
+    case ".png":
+      contentType = "image/png";
+      break;
+    case ".jpg":
+    case ".jpeg":
+      contentType = "image/jpg";
+      break;
   }
 
   fs.readFile(filePath, (err, content) => {
+    
     if (err) {
       if (err.code === "ENOENT") {
         res.writeHead(404);
@@ -109,22 +124,56 @@ wss.on("connection", (connection, req) => {
           // Handle recipient not found error here
         }
       }
+      if (type === "send_disconnect_notification") {
+        let recipients = data.recipients;
+        recipients.forEach((recipient) => {
+          const recipientConnection = connections.get(recipient);
+          if (
+            recipientConnection &&
+            recipientConnection.readyState === WebSocket.OPEN
+          ) {
+            recipientConnection.send(
+              JSON.stringify({
+                type: "disconnect_notification",
+                sender: senderCode,
+              })
+            );
+          }
+        })
+      }
       if (type === "set_sender") {
         if (!sender) {
           sender = senderCode;
           if (connections.has(sender)) {
             connection.send(
-              "Sender code already in use. Please try again with a different code."
+              JSON.stringify({
+                type: "set_sender",
+                status: false,
+                message:
+                  "Sender code already in use. Please try again with a different code.",
+              })
             );
-            // dont close
-            connection.close();
+            sender = undefined;
             return;
           }
           connections.set(sender, connection);
           console.log(sender);
-          connection.send("Sender code set successfully.");
+          connection.send(
+            JSON.stringify({
+              type: "set_sender",
+              status: true,
+              sender: senderCode,
+              message: "Sender code set successfully.",
+            })
+          );
         } else {
-          connection.send("Sender code is already set.");
+          connection.send(
+            JSON.stringify({
+              type: "set_sender",
+              status: true,
+              message: "Sender code is already set.",
+            })
+          );
         }
       } else if (type === "message") {
         if (!sender) {

@@ -55,4 +55,6 @@ function getPublicKnownVariables(k, min, max) {
     return {prime: primeNumber, generator: alphaA};
 }
 
+
+
 module.exports = { isPrimeFermat, getPrimeNum, getPublicKnownVariables };
