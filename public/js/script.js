@@ -14,6 +14,7 @@ const senderInput = document.getElementById("sender");
 const displayName = document.getElementById("displayName");
 const setSenderButton = document.getElementById("setSender");
 const recipientInput = document.getElementById("recipient");
+const fileInput = document.getElementById("file-input");
 const msg = document.getElementById("msg");
 const sendButton = document.getElementById("sendButton");
 var TOStopTyping = [];
@@ -100,6 +101,40 @@ msg.addEventListener("input", () => {
   }, 1000);
 });
 
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+
+    reader.onerror = () => {
+      reject(reader.error);
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+}
+// Function to convert array buffer to base64
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+function base64ToArrayBuffer(base64) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 // Function to send a message
 const sendMessage = async (
   type = "message",
@@ -111,11 +146,11 @@ const sendMessage = async (
     showNotification("Please enter a message.");
     return;
   }
-  if(type == 'send_disconnect_notification') {
+  if (type == "send_disconnect_notification") {
     const payload = JSON.stringify({
       type,
       sender: sender,
-      recipients
+      recipients,
     });
     socket.send(payload);
     console.log(payload);
@@ -141,21 +176,35 @@ const sendMessage = async (
     );
     return;
   }
-  
+
   message = msg.value.trim();
   console.log(msg);
   console.log(message);
+  let attachments = [];
+  if (fileInput.files.length > 0) {
+    let file = fileInput.files[0];
+    let fileData = await readFileAsArrayBuffer(file);
+    let base64Data = arrayBufferToBase64(fileData);
+    attachments.push({
+      fileName: file.name,
+      fileType: file.type,
+      fileData: base64Data,
+    });
+  }
   message = JSON.stringify({
     sender: senderInput.value,
     displayName: displayName.value,
-    message: message,
+    message: {
+      attachments,
+      text:message,
+    },
   });
   writeLine(`You to ${recipientInput.value.trim()}: ${message}`);
   message = await encryptData(message, sharedKeys[recipient]);
   console.log(message);
-  message = arrayBufferToString(message);
+  message = arrayBufferToBase64(message);
   console.log(message);
-  console.log(stringToArrayBuffer(message));
+  // console.log(stringToArrayBuffer(message));
   const params = { prime: 0, generator: 0 };
   if (sender && recipient && message) {
     const payload = JSON.stringify({
@@ -171,6 +220,35 @@ const sendMessage = async (
     showNotification("Please fill in all fields.");
   }
 };
+
+// Assuming you receive fileData, fileName, and fileType from the WebSocket message
+function handleReceivedFile(fileData, fileName, fileType) {
+  // Convert base64 file data to a Blob
+  const blob = base64ToBlob(fileData, fileType);
+
+  // Create object URL for the Blob
+  const url = URL.createObjectURL(blob);
+
+  // Use the URL as the source for displaying or downloading the file
+  // For example, set it as the src attribute of an <img> or <a> element
+  const fileLink = document.createElement("a");
+  fileLink.href = url;
+  fileLink.download = fileName;
+  fileLink.textContent = `Download ${fileName}`;
+
+  document.body.appendChild(fileLink); // Append the link to the document body or any other suitable location
+}
+
+// Function to convert base64 data to a Blob
+function base64ToBlob(base64Data, contentType = "") {
+  const byteCharacters = atob(base64Data);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: contentType });
+}
 
 // Function to handle setting the sender code
 const setSender = async () => {
@@ -213,8 +291,8 @@ socket.addEventListener("message", async ({ data }) => {
     data = JSON.parse(data);
     console.log(data);
     if (data.type === "message") {
-      console.log("From " + data.sender + ": " + data.message);
-      data.message = stringToArrayBuffer(data.message);
+      
+      data.message = base64ToArrayBuffer(data.message);
       data.message = await decryptData(data.message, sharedKeys[data.sender]);
       let message = "";
       console.log(data.message);
@@ -224,8 +302,15 @@ socket.addEventListener("message", async ({ data }) => {
           login: message.sender,
           displayName: message.displayName,
         };
-
+        console.log(message);
         message = message.message;
+        if(message.attachments.length) {
+          for (let i = 0; i < message.attachments.length; i++) {
+            console.log(message.attachments[i].fileType);
+            console.log(message.attachments[i].fileData);
+            handleReceivedFile(message.attachments[i].fileData, message.attachments[i].fileName, message.attachments[i].fileType);
+          }
+        }
         let sender;
         if (userNames[data.sender]) {
           sender = userNames[data.sender].displayName;
@@ -233,10 +318,11 @@ socket.addEventListener("message", async ({ data }) => {
             sender = userNames[data.sender].login;
           }
         }
-        console.log("From " + sender + ": " + message);
-        writeLine("From " + sender + ": " + message);
+        console.log(message)
+        console.log("From " + sender + ": " + message.text);
+        writeLine("From " + sender + ": " + message.text);
       }
-        return;
+      return;
     }
     if (data.type === "typing") {
       senderTyping = true;
@@ -307,7 +393,7 @@ function updateTypingNotify(data) {
   let sender = data.sender;
   const isSenderTypingDiv = document.getElementById("isSenderTyping");
   if (senderTyping) {
-    let name='';
+    let name = "";
     if (userNames[sender]) {
       name = userNames[sender].displayName;
       if (!name) {
@@ -430,17 +516,6 @@ async function decryptData(ciphertext, key) {
   return new TextDecoder().decode(decryptedData);
 }
 
-function arrayBufferToString(arrayBuffer) {
-  const uint8Array = new Uint8Array(arrayBuffer);
-  return Array.from(uint8Array).join(" ");
-}
-
-// Convert string to ArrayBuffer
-function stringToArrayBuffer(string) {
-  const numbers = string.split(" ").map(Number);
-  const uint8Array = new Uint8Array(numbers);
-  return uint8Array.buffer;
-}
 
 async function getAESEncryptionKey(key) {
   return await window.crypto.subtle.importKey(
@@ -503,11 +578,10 @@ function showNotification(message, type) {
 
 window.addEventListener("beforeunload", function (e) {
   // Cancel the event
-  e.preventDefault();
+  // e.preventDefault();
 
-  sendMessage("send_disconnect_notification", ownLoginHash, '', '');
+  sendMessage("send_disconnect_notification", ownLoginHash, "", "");
 });
-
 
 function updateUsersList() {
   let usersList = document.getElementById("usersList");
@@ -520,3 +594,40 @@ function updateUsersList() {
     usersList.appendChild(userElement);
   }
 }
+
+// fileInput.addEventListener("change", async (event) => {
+//   const file = event.target.files[0];
+//   const reader = new FileReader();
+
+//   reader.onload = async () => {
+//     const fileData = reader.result.split(",")[1]; // Extract base64 data
+//     const message = {
+//       type: "file",
+//       // sender: senderCode, // Your sender code
+//       // recipient: recipientCode, // Recipient's code
+//       message: JSON.stringify({
+//         fileName: file.name,
+//         fileType: file.type,
+//         fileData: fileData,
+//       }),
+//     };
+//     console.log({
+//       fileName: file.name,
+//       fileType: file.type,
+//       fileData: fileData,
+//     });
+
+//     console.log(JSON.stringify(message));
+//     let ff = await encryptData(
+//       JSON.stringify(message),
+//       sharedKeys[recipients[0]]
+//     );
+//     console.log(ff);
+//     let fff = await decryptData(ff, sharedKeys[recipients[0]]);
+//     console.log(fff);
+//     // Send the file message over the WebSocket connection
+//     // connection.send(JSON.stringify(message));
+//   };
+
+//   reader.readAsDataURL(file);
+// });
