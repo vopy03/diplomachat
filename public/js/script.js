@@ -69,10 +69,10 @@ const sendStoppedTypingNotification = async () => {
   isTyping = false;
   const sender = await sha256(senderInput.value.trim());
   const recipient = await sha256(recipientInput.value.trim());
-  const message = "stopped typing";
+  const message = "stop_typing";
   socket.send(
     JSON.stringify({
-      type: "stopped typing",
+      type: "stop_typing",
       sender,
       recipient,
       message,
@@ -196,7 +196,7 @@ const sendMessage = async (
     displayName: displayName.value,
     message: {
       attachments,
-      text:message,
+      text: message,
     },
   });
   writeLine(`You to ${recipientInput.value.trim()}: ${message}`);
@@ -244,7 +244,7 @@ function base64ToBlob(base64Data, contentType = "") {
   const byteCharacters = atob(base64Data);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
   }
   const byteArray = new Uint8Array(byteNumbers);
   return new Blob([byteArray], { type: contentType });
@@ -291,7 +291,6 @@ socket.addEventListener("message", async ({ data }) => {
     data = JSON.parse(data);
     console.log(data);
     if (data.type === "message") {
-      
       data.message = base64ToArrayBuffer(data.message);
       data.message = await decryptData(data.message, sharedKeys[data.sender]);
       let message = "";
@@ -304,11 +303,15 @@ socket.addEventListener("message", async ({ data }) => {
         };
         console.log(message);
         message = message.message;
-        if(message.attachments.length) {
+        if (message.attachments.length) {
           for (let i = 0; i < message.attachments.length; i++) {
             console.log(message.attachments[i].fileType);
             console.log(message.attachments[i].fileData);
-            handleReceivedFile(message.attachments[i].fileData, message.attachments[i].fileName, message.attachments[i].fileType);
+            handleReceivedFile(
+              message.attachments[i].fileData,
+              message.attachments[i].fileName,
+              message.attachments[i].fileType
+            );
           }
         }
         let sender;
@@ -318,7 +321,7 @@ socket.addEventListener("message", async ({ data }) => {
             sender = userNames[data.sender].login;
           }
         }
-        console.log(message)
+        console.log(message);
         console.log("From " + sender + ": " + message.text);
         writeLine("From " + sender + ": " + message.text);
       }
@@ -326,7 +329,7 @@ socket.addEventListener("message", async ({ data }) => {
     }
     if (data.type === "typing") {
       senderTyping = true;
-    } else if (data.type === "stopped typing") {
+    } else if (data.type === "stop_typing") {
       senderTyping = false;
     }
     if (data.type === "set_sender") {
@@ -515,7 +518,6 @@ async function decryptData(ciphertext, key) {
   );
   return new TextDecoder().decode(decryptedData);
 }
-
 
 async function getAESEncryptionKey(key) {
   return await window.crypto.subtle.importKey(

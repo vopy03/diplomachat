@@ -103,8 +103,8 @@ wss.on("connection", (connection, req) => {
       if (type === "typing") {
         // Send typing notification to recipient
         sendTypingNotification(senderCode, recipient);
-      } else if (type === "stopped typing") {
-        // Send stopped typing notification to recipient
+      } else if (type === "stop_typing") {
+        // Send stop_typing notification to recipient
         sendStoppedTypingNotification(senderCode, recipient);
       }
       if (type === "get_public_vars") {
@@ -219,7 +219,7 @@ const sendStoppedTypingNotification = (sender, recipient) => {
   const recipientData = connections.get(recipient);
   if (recipientData && recipientData.readyState === WebSocket.OPEN) {
     recipientData.send(
-      JSON.stringify({ type: "stopped typing", sender: sender })
+      JSON.stringify({ type: "stop_typing", sender: sender })
     );
   }
 };
