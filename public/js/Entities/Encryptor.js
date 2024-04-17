@@ -1,9 +1,10 @@
+import Tools from "./Tools.js";
+
 class Encryptor {
-  static key = "";
   static iv = "";
   static algorithm = "AES-GCM";
 
-  static async encrypt(text, key = this.key) {
+  static async encrypt(text, key) {
     if (!key) {
       return false;
     }
@@ -20,14 +21,14 @@ class Encryptor {
     );
     return encryptedData;
   }
-  static async decrypt(encryptedData, key = this.key) {
+  static async decrypt(encryptedData, key) {
     if (typeof key === 'string') {
         key = await Tools.getAESEncryptionKey(key);
     }
     const decryptedData = await window.crypto.subtle.decrypt(
       {
         name: this.algorithm,
-        iv: params.iv, // Use the same IV used during encryption
+        iv: this.iv, // Use the same IV used during encryption
       },
       key,
       encryptedData
@@ -35,9 +36,6 @@ class Encryptor {
     return new TextDecoder().decode(decryptedData);
   }
 
-  static setEncryptionKey(key) {
-    this.key = key;
-  }
   static setEncryptionIV(iv) {
     this.iv = iv;
   }
@@ -45,3 +43,5 @@ class Encryptor {
     this.algorithm = algorithm;
   }
 }
+
+export default Encryptor;

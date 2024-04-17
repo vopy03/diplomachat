@@ -1,3 +1,5 @@
+import Message from "./Message.js";
+
 class Recipient {
   static recipients = [];
 
@@ -9,7 +11,9 @@ class Recipient {
     this.isTyping = false;
   }
   static add(hashName, login = "", displayName = "") {
-    Recipient.recipients.push(new Recipient(hashName, login, displayName));
+    if(!Recipient.isRecipientIsset(hashName) && hashName) {
+      Recipient.recipients.push(new Recipient(hashName, login, displayName));
+    }
   }
   static remove(hashName) {
     Recipient.recipients = Recipient.recipients.filter(
@@ -20,6 +24,9 @@ class Recipient {
     Recipient.remove(this.hashName);
   }
   static getByHashName(hashName) {
+    if (!Recipient.isRecipientIsset(hashName)) {
+      Recipient.add(hashName);
+    }
     return Recipient.recipients.find(
       (recipient) => recipient.hashName === hashName
     );
@@ -48,6 +55,7 @@ class Recipient {
 
   changeTypingStatus(status) {
     this.isTyping = status;
+    console.log(this)
   }
 
   async sendMessage(message) {
@@ -59,10 +67,16 @@ class Recipient {
     message.send();
   }
   static isRecipientIsset(hashName) {
-    if (!this.recipients.includes(hashName)) {
-      return false;
-    } else {
+    if(Recipient.recipients.find((recipient) => recipient.hashName === hashName)) {
       return true;
+    } else {
+      return false;
     }
   }
+  static getAllRecipientHashNames() {
+    return this.recipients.map((recipient) => recipient.hashName);
+  }
 }
+
+
+export default Recipient;

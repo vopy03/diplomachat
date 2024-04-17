@@ -1,3 +1,11 @@
+import Recipient from "./Recipient.js";
+import Encryptor from "./Encryptor.js";
+import Tools from "./Tools.js";
+import DiffieHellman from "./DiffieHellman.js";
+import User from "./User.js";
+import DOM from "./DOM.js";
+import App from "./App.js";
+
 class Message {
   static messages = [];
 
@@ -5,10 +13,11 @@ class Message {
     sender,
     recipient,
     content = "",
-    id = global.crypto.randomUUID(),
+    id = window.crypto.randomUUID(),
     attachments = [],
     reactions = [],
-    date = Date.now()
+    date = Date.now(),
+    senderInfo = { login: User.login, displayName: User.displayName }
   ) {
     this.sender = sender;
     this.recipient = recipient;
@@ -18,9 +27,10 @@ class Message {
     this.reactions = reactions;
     this.date = date;
     this.encryptedContent = "";
-
+  }
+  static init() {
     socket.addEventListener("message", async ({ data }) => {
-      if (isJSON(data)) {
+      if (Tools.isJSON(data)) {
         data = JSON.parse(data);
         console.log(data);
         if (data.type === "message") {
@@ -50,16 +60,91 @@ class Message {
       }
     });
   }
-  static async sendMessage(message) {
-    this.messages.push(message);
+  static async sendMessage() {
+    let sender;
+    if (User.hashName) {
+      sender = User.hashName;
+    } else {
+      sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
+    }
+    let recipient = await Tools.sha256(DOM.elems.recipientInput.value.trim());
+    if (sender == recipient) {
+      Tools.showNotification(
+        "You can't send a message to yourself!",
+        "warning"
+      );
+      return;
+    }
+    // if recipient not in list of recipients - send public key
+    if (!Recipient.isRecipientIsset(recipient)) {
+      const payload = JSON.stringify({
+        type: "public_key_exchange",
+        sender,
+        recipient,
+        key: Number(DiffieHellman.publicKey),
+      });
+      socket.send(payload);
+      App.funqueue.push(Tools.wrapFunctionQueue(this.sendMessage, this));
+      return;
+    }
+
+    let messageObj = Message.fromText(
+      DOM.elems.msg.value.trim(),
+      recipient,
+      User.hashName
+    );
+    console.log(messageObj);
+    // console.log(message);
+    let attachments = [];
+    if (DOM.elems.fileInput.files.length > 0) {
+      let file = DOM.elems.fileInput.files[0];
+      let fileData = await Tools.readFileAsArrayBuffer(file);
+      let base64Data = Tools.arrayBufferToBase64(fileData);
+      attachments.push({
+        fileName: file.name,
+        fileType: file.type,
+        fileData: base64Data,
+      });
+    }
+    messageObj.attachments = attachments;
+    let message = JSON.stringify({
+      sender: User.login,
+      displayName: User.displayName,
+      message: messageObj,
+    });
+    DOM.writeLine(`You to ${DOM.elems.recipientInput.value.trim()}: ${message}`);
+    message = await Encryptor.encrypt(
+      message,
+      DiffieHellman.sharedKeys[recipient]
+    );
+    console.log(message);
+    message = Tools.arrayBufferToBase64(message);
+    console.log(message);
+    // console.log(stringToArrayBuffer(message));
+    if (sender && recipient && message) {
+      const payload = JSON.stringify({
+        type: 'message',
+        sender,
+        recipient,
+        message,
+      });
+      console.log(payload);
+      socket.send(payload);
+      DOM.elems.msg.value = "";
+    } else {
+      Tools.showNotification("Please fill in all fields.");
+    }
+
+    this.messages.push(messageObj);
+
     return message;
   }
   static fromJSON(json) {
     return new Message(
       json.sender,
       json.recipient,
-      json.message ? json.message : "",
-      global.crypto.randomUUID(),
+      json.content ? json.content : "",
+      json.id ? json.id : window.crypto.randomUUID(),
       json.attachments ? json.attachments : [],
       json.reactions ? json.reactions : [],
       json.date ? json.date : Date.now()
@@ -113,40 +198,44 @@ class Message {
     params = [],
     sender = User.hashName
   ) {
-    if(!recipient) {
-      socket.send(JSON.stringify({ type, sender,  ...params }));
-    }
-    else {
+    if (!recipient) {
+      socket.send(JSON.stringify({ type, sender, ...params }));
+    } else {
       socket.send(JSON.stringify({ type, sender, recipient, ...params }));
     }
     return;
   }
 
-  static async handleMessage() {
-      data.message = base64ToArrayBuffer(data.message);
-      data.message = await Encryptor.decrypt(data.message, DiffieHellman.sharedKeys[data.sender]);
-      let message = "";
-      console.log(data.message);
-      if (isJSON(data.message)) {
-        message = JSON.parse(data.message);
-        Recipient.getByHashName(data.sender).login = message.sender;
-        Recipient.getByHashName(data.sender).displayName = message.displayName;
-        console.log(message);
-        message = Message.fromJSON(message.message);
-        if (message.attachments.length) {
-          for (let i = 0; i < message.attachments.length; i++) {
-            handleReceivedFile(
-              message.attachments[i].fileData,
-              message.attachments[i].fileName,
-              message.attachments[i].fileType
-            );
-          }
+  static async handleMessage(data) {
+    data.message = Tools.base64ToArrayBuffer(data.message);
+    data.message = await Encryptor.decrypt(
+      data.message,
+      DiffieHellman.sharedKeys[data.sender]
+    );
+    let message = "";
+    console.log(data.message);
+    if (Tools.isJSON(data.message)) {
+      message = JSON.parse(data.message);
+      Recipient.getByHashName(data.sender).login = message.sender;
+      Recipient.getByHashName(data.sender).displayName = message.displayName;
+      console.log(message);
+      message = Message.fromJSON(message.message);
+      if (message.attachments.length) {
+        for (let i = 0; i < message.attachments.length; i++) {
+          Tools.handleReceivedFile(
+            message.attachments[i].fileData,
+            message.attachments[i].fileName,
+            message.attachments[i].fileType
+          );
         }
-        let senderName = Recipient.getName(data.sender);
-        console.log(message);
-        console.log("From " + senderName + ": " + message.content);
-        writeLine("From " + senderName + ": " + message.content);
       }
+      let senderName = Recipient.getName(data.sender);
+      console.log(message);
+      console.log("From " + senderName + ": " + message.content);
+      DOM.writeLine("From " + senderName + ": " + message.content);
+
+      Message.messages.push(message);
+    }
 
     return;
   }
@@ -159,13 +248,14 @@ class Message {
     Recipient.remove(data.sender);
   }
   static async handlePublicKeyExchange(data) {
-    recipientKey = data.key;
-    Recipient.getByHashName(data.sender).changePublicKey(data.key);
-    DiffieHellman.sharedKeys[data.sender] = await Tools.getSharedKey(
-      recipientKey,
+    console.log(data);
+    // recipientKey = data.key;
+
+    DiffieHellman.sharedKeys[data.sender] = await DiffieHellman.getSharedKey(
+      data.key,
       DiffieHellman.privateKey
     );
-    if (Recipient.isRecipientIsset(data.sender)) {
+    if (!Recipient.isRecipientIsset(data.sender)) {
       socket.send(
         JSON.stringify({
           type: "public_key_exchange",
@@ -174,7 +264,7 @@ class Message {
           key: Number(DiffieHellman.publicKey),
         })
       );
-      Recipient.add(data.sender);
+      Recipient.getByHashName(data.sender).setPublicKey(data.key);
       Tools.showNotification(
         `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
       );
@@ -183,14 +273,20 @@ class Message {
         `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
       );
     }
+    if (App.funqueue.length > 0) {
+      App.funqueue.shift()();
+    }
   }
   static handleSetSender(data) {
     Tools.showNotification(data.message);
     if (data.status) {
+      User.hashName = data.sender;
+      User.login = DOM.elems.senderInput.value.trim();
+      User.displayName = DOM.elems.displayName.value.trim();
       User.isServerApproved = true;
     } else {
-      setSenderButton.disabled = false;
-      senderInput.disabled = false;
+      DOM.elems.setSenderButton.disabled = false;
+      DOM.elems.senderInput.disabled = false;
     }
   }
   static handlePublicVars(data) {
@@ -199,12 +295,59 @@ class Message {
     DiffieHellman.generator = params.generator;
     DiffieHellman.generateKeys();
 
-    Encryptor.iv = params.iv;
+    Encryptor.iv = Tools.hexStringToArrayBuffer(params.iv);
   }
   static handleTyping(data) {
-    Recipient.getByHashName(data.recipient).changeTypingStatus(true);
+    console.log(data);
+    if(Recipient.isRecipientIsset(data.sender)) {
+      Recipient.getByHashName(data.sender).changeTypingStatus(true);
+    }
   }
-  static handleStopTyping() {
-    Recipient.getByHashName(data.recipient).changeTypingStatus(false);
+  static handleStopTyping(data) {
+    if(Recipient.isRecipientIsset(data.sender)) {
+      Recipient.getByHashName(data.sender).changeTypingStatus(false);
+    }
+  }
+
+  static async sendTypingNotification() {
+    User.isTyping = true;
+    let sender;
+    if (User.hashName) {
+      sender = User.hashName;
+    } else {
+      sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
+    }
+    const recipient = await Tools.sha256(DOM.elems.recipientInput.value.trim());
+    const message = "typing";
+    socket.send(
+      JSON.stringify({
+        type: "typing",
+        sender,
+        recipient,
+        message,
+      })
+    );
+  }
+
+  static async sendStoppedTypingNotification() {
+    User.isTyping = false;
+    let sender;
+    if (User.hashName) {
+      sender = User.hashName;
+    } else {
+      sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
+    }
+    const recipient = await Tools.sha256(DOM.elems.recipientInput.value.trim());
+    const message = "stop_typing";
+    socket.send(
+      JSON.stringify({
+        type: "stop_typing",
+        sender,
+        recipient,
+        message,
+      })
+    );
   }
 }
+
+export default Message;
