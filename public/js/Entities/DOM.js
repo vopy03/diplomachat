@@ -14,11 +14,30 @@ class DOM {
     this.elems.msg = document.getElementById("msg");
     this.elems.sendButton = document.getElementById("sendButton");
 
+    this.elems.tabs = document.querySelectorAll(".ct-tab");
+
+    this.elems.tabs.forEach((tab) => {
+      tab.classList.remove('active')
+    })
+    this.toggleTab('sender-set-tab')
+
     this.initHandlers();
   }
 
+  static toggleTab(tabName) {
+    this.elems.tabs.forEach((tab) => {
+      if (tab.classList.contains(tabName)) {
+        tab.classList.add('active')
+      } else {
+        tab.classList.remove('active')
+      }
+    })
+  }
+
   static initHandlers() {
-    this.elems.setSenderButton.addEventListener("click", User.setSender);
+    this.elems.setSenderButton.addEventListener("click", () => {
+      User.setSender();
+    });
     document
       .querySelector("emoji-picker")
       .addEventListener("emoji-click", (event) => {
@@ -58,12 +77,28 @@ class DOM {
     const line = document.createElement("div");
     line.innerHTML = `<p>${text}</p>`;
     this.elems.chat.appendChild(line);
-  };
+  }
   static get(selector) {
     return document.querySelector(selector);
   }
   static getAll(selector) {
     return document.querySelectorAll(selector);
+  }
+
+  static displayMessageInChat(message) {
+    const line = document.createElement("div");
+    let sender = Recipient.getName(message.sender);
+    let login = Recipient.getByHashName(message.sender).login;
+    if(message.sender === User.hashName) {
+      sender = User.getName();
+      login = User.login;
+    }
+    line.innerHTML = `<div>
+      <p>${sender}: ${message.content}</p>
+      <small>${login}</small>
+    </div>
+    `;
+    this.elems.chat.appendChild(line);
   }
 }
 

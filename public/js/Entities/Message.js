@@ -112,7 +112,8 @@ class Message {
       displayName: User.displayName,
       message: messageObj,
     });
-    DOM.writeLine(`You to ${DOM.elems.recipientInput.value.trim()}: ${message}`);
+    // DOM.writeLine(`You to ${DOM.elems.recipientInput.value.trim()}: ${message}`);
+    DOM.displayMessageInChat(messageObj);
     message = await Encryptor.encrypt(
       message,
       DiffieHellman.sharedKeys[recipient]
@@ -232,7 +233,8 @@ class Message {
       let senderName = Recipient.getName(data.sender);
       console.log(message);
       console.log("From " + senderName + ": " + message.content);
-      DOM.writeLine("From " + senderName + ": " + message.content);
+      DOM.displayMessageInChat(message);
+      // DOM.writeLine("From " + senderName + ": " + message.content);
 
       Message.messages.push(message);
     }
@@ -255,6 +257,7 @@ class Message {
       data.key,
       DiffieHellman.privateKey
     );
+    console.log(!Recipient.isRecipientIsset(data.sender))
     if (!Recipient.isRecipientIsset(data.sender)) {
       socket.send(
         JSON.stringify({
@@ -265,6 +268,7 @@ class Message {
         })
       );
       Recipient.getByHashName(data.sender).setPublicKey(data.key);
+      console.log(Recipient.getByHashName(data.sender))
       Tools.showNotification(
         `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
       );
@@ -278,15 +282,17 @@ class Message {
     }
   }
   static handleSetSender(data) {
-    Tools.showNotification(data.message);
     if (data.status) {
       User.hashName = data.sender;
       User.login = DOM.elems.senderInput.value.trim();
       User.displayName = DOM.elems.displayName.value.trim();
       User.isServerApproved = true;
+      DOM.toggleTab('main-tab')
+      Tools.showNotification(data.message);
     } else {
       DOM.elems.setSenderButton.disabled = false;
       DOM.elems.senderInput.disabled = false;
+      Tools.showNotification(data.message, 'danger');
     }
   }
   static handlePublicVars(data) {

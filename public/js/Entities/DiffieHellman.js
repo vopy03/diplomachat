@@ -62,6 +62,7 @@ class DiffieHellman {
       BigInt(privateKey),
       BigInt(this.prime)
     );
+    console.log(key.toString());
     return await Tools.sha256(key.toString());
   }
 }

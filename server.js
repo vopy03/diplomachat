@@ -6,10 +6,22 @@ const WebSocket = require("ws");
 const crypto = require("crypto");
 const path = require("path"); // Import the path module
 
-const tools = require("./tools.js");
+// const tools = require("./tools.js");
+let primes = [];
+
+fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
+  if (err) {
+    console.error("Error reading file:", err);
+    return;
+  }
+  primes = data.split('\r\n');
+  changeParams();
+});
+
+// console.log(primes)
 
 let params = {};
-changeParams();
+
 const index = fs.readFileSync("./public/index.html", "utf8");
 
 const options = {
@@ -23,7 +35,7 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 function changeParams() {
-  params = tools.getPublicKnownVariables(4, 90000000, 100000000000);
+  params = getPublicKnownVariables(4);
   params.iv = crypto.randomBytes(12);
   params.iv = params.iv.toString("hex");
 }
@@ -61,7 +73,6 @@ const server = https.createServer(options, (req, res) => {
   }
 
   fs.readFile(filePath, (err, content) => {
-    
     if (err) {
       if (err.code === "ENOENT") {
         res.writeHead(404);
@@ -139,7 +150,7 @@ wss.on("connection", (connection, req) => {
               })
             );
           }
-        })
+        });
       }
       if (type === "set_sender") {
         if (!sender) {
@@ -218,8 +229,44 @@ const sendTypingNotification = (sender, recipient) => {
 const sendStoppedTypingNotification = (sender, recipient) => {
   const recipientData = connections.get(recipient);
   if (recipientData && recipientData.readyState === WebSocket.OPEN) {
-    recipientData.send(
-      JSON.stringify({ type: "stop_typing", sender: sender })
-    );
+    recipientData.send(JSON.stringify({ type: "stop_typing", sender: sender }));
   }
 };
+
+function getPublicKnownVariables(k) {
+  let primeNums = [];
+  for (let i = 0; i < k; i++) {
+    let res = getRandomPrimeNum();
+    console.log(res);
+    primeNums.push(res);
+  }
+
+  console.log("Прості числа: " + primeNums);
+  let primeNumber = primeNums[Math.floor(Math.random() * primeNums.length)];
+  console.log("Вибране просте число (p): " + primeNumber);
+
+  let alphaA = getRandomPrimeNumSmallerThan(primeNumber);
+  console.log("Число а (alpha): " + alphaA);
+
+  return { prime: primeNumber, generator: alphaA };
+}
+
+function getRandomPrimeNum() {
+    // Get a random prime number
+    const randomIndex = Math.floor(Math.random() * primes.length);
+    const randomPrime = primes[randomIndex];
+    console.log("Random prime number:", randomPrime);
+    return randomPrime;
+}
+function getRandomPrimeNumSmallerThan(num) {
+  // Get another random prime number smaller than the first one
+  const smallerPrimes = primes.filter((prime) => prime < num);
+  if (smallerPrimes.length > 0) {
+    const smallerRandomIndex = Math.floor(Math.random() * smallerPrimes.length);
+    const smallerRandomPrime = smallerPrimes[smallerRandomIndex];
+    // console.log("Smaller random prime number:", smallerRandomPrime);
+    return smallerRandomPrime;
+  } else {
+    console.log("No prime number smaller than the first one found.");
+  }
+}
