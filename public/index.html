@@ -74,21 +74,58 @@
           <div class="row">
 
             <section class=" col-lg-4 users-section py-3 px-0 border-end">
-              <div id="usersList">
-                <div class="user d-flex p-2" data-user-id="">
-                  <div class='user-avatar-container p-2'>
-                    <i class="user-avatar rounded-circle" data-letter="d" style="background-color:#333"></i>
-                  </div>
-                  <div class="d-flex flex-column justify-content-center">
-                    <span class="fs-5">Display Name</span>
-                    <span class="fs-6">www</span>
+              <div class="h-100">
+
+                <div id="usersList">
+                  <!-- <div class="user d-flex p-2 mx-2" data-user-id="">
+                    <div class='user-avatar-container position-relative p-2'>
+                      <i class="user-avatar rounded-circle" data-letter="d" style="background-color:#333"></i>
+                      <i class="position-absolute rounded-circle online-marker online"></i>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                      <span class="fs-5">Display Name</span>
+                      <span class="fs-6">www</span>
+                    </div>
+                  </div> -->
+                </div>
+                <div class="add-user-btn" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                  <div class="user d-flex p-2 mx-2">
+                    <div class='user-avatar-container position-relative p-2'>
+                      <i class="user-avatar rounded-circle add-user-circle" data-letter="+"
+                        style="background-color:#777777"></i>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                      <span class="fs-5">Add user</span>
+                    </div>
                   </div>
                 </div>
+
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Add user</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body add-user">
+                        <div class="form-floating mb-3">
+                          <input type="text" class="form-control" id="add-user-input" placeholder="name@example.com">
+                          <label for="add-user-input">User login</label>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="add-user-btn" disabled>Add</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </section>
 
             <section class="col-lg-8 chat-section">
-              <input id="recipient" type="text" placeholder="Recipient's code" />
+              <input id="recipient" type="hidden" placeholder="Recipient's code" />
               <div class="chat-window" style="min-height:400px">
                 <div id="chat"></div>
               </div>

@@ -10,7 +10,7 @@ class Recipient {
     this.displayName = displayName;
     this.publicKey = "";
     this.isTyping = false;
-    this.isOnline = false;
+    this.isOnline = true;
     this.bgcolor = '#333';
   }
   static add(hashName, login = "", displayName = "") {
@@ -35,7 +35,7 @@ class Recipient {
   }
   static getByHashName(hashName) {
     if (!Recipient.isRecipientIsset(hashName)) {
-      Recipient.add(hashName, DOM.elems.recipientInput.value);
+      Recipient.add(hashName, DOM.elems.addUserInput.value);
     }
     return Recipient.recipients.find(
       (recipient) => recipient.hashName === hashName
@@ -88,6 +88,15 @@ class Recipient {
   static isRecipientIsset(hashName) {
     if (
       Recipient.recipients.find((recipient) => recipient.hashName === hashName)
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  static isRecipientIssetByLogin(login) {
+    if (
+      Recipient.recipients.find((recipient) => recipient.login === login)
     ) {
       return true;
     } else {

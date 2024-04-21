@@ -15,6 +15,8 @@ class DOM {
     this.elems.msg = document.getElementById("msg");
     this.elems.sendButton = document.getElementById("sendButton");
     this.elems.usersList = document.getElementById("usersList");
+    this.elems.addUserBtn = document.getElementById("add-user-btn");
+    this.elems.addUserInput = document.getElementById("add-user-input");
 
     this.elems.tabs = document.querySelectorAll(".ct-tab");
 
@@ -65,6 +67,46 @@ class DOM {
       }, 1000);
     });
 
+    this.elems.addUserInput.addEventListener("input", () => {
+      Message.isUserCheckSended = false;
+      this.elems.addUserBtn.disabled = true;
+      if(DOM.get('.modal-body.add-user .alert')) {
+        DOM.get('.modal-body.add-user .alert').remove();
+      }
+      clearTimeout(TOCheckUserOnline);
+      if(this.elems.addUserInput.value == User.login) {
+        let alert = document.createElement('div');
+        alert.classList.add('alert', 'alert-warning');
+        alert.innerHTML = `You can't add yourself`;
+        DOM.get('.modal-body.add-user').appendChild(alert);
+        return;
+      }
+      if(Recipient.isRecipientIssetByLogin(this.elems.addUserInput.value.trim())) {
+        let alert = document.createElement('div');
+        alert.classList.add('alert', 'alert-warning');
+        alert.innerHTML = `User is already added`;
+        DOM.get('.modal-body.add-user').appendChild(alert);
+        return;
+      }
+      TOCheckUserOnline = setTimeout(() => {
+        if(DOM.elems.addUserInput.value.trim() && this.elems.addUserInput.value != User.login) {
+          Message.sendUserOnlineCheck();
+        }
+      }, 1000);
+    });
+    this.elems.addUserBtn.addEventListener("click", async () => {
+      let hashName = await Tools.sha256(this.elems.addUserInput.value.trim());
+      Recipient.add(hashName, this.elems.addUserInput.value.trim());
+      this.updateUserList();
+      // close modal
+      DOM.get('#exampleModal [data-bs-dismiss="modal"]').click()
+      this.elems.addUserInput.value = '';
+      this.elems.addUserBtn.disabled = true;
+      if(DOM.get('.modal-body.add-user .alert')) {
+        DOM.get('.modal-body.add-user .alert').remove();
+      }
+    })
+
     // this.elems.msg.addEventListener("keydown", (event) => {
     //   if (event.keyCode === CHAR_RETURN) {
     //     sendMessage();
@@ -108,14 +150,16 @@ class DOM {
 
   static getRecipientUserListItem(recipient) {
     let loginhtml ='';
+    let isOnline = recipient.isOnline ? 'online' : '';
     if(recipient.displayName) {
       loginhtml = '<span class="fs-6">'+recipient.login+'</span>';
     } 
     let html = 
-    '<div class="user d-flex p-2" data-user-id="'+recipient.id+'">'+
-      '<div class="user-avatar-container p-2">'+
+    '<div class="user d-flex mx-2 p-2" data-user-id="'+recipient.hashName+'">'+
+      '<div class="user-avatar-container position-relative p-2">'+
         '<i class="user-avatar rounded-circle" data-letter="'+recipient.getName().charAt(0)+
         '" style="background-color:'+recipient.bgcolor+'"></i>'+
+        '<i class="position-absolute rounded-circle online-marker ' + isOnline + '"></i>'+
       '</div>'+
       '<div class="d-flex flex-column justify-content-center">'+
         '<span class="fs-5">'+recipient.getName()+'</span>' + loginhtml
@@ -131,6 +175,14 @@ class DOM {
         this.getRecipientUserListItem(recipient);
         console.log(this.getRecipientUserListItem(recipient))
     });
+
+    // init onuser click
+    this.elems.usersList.querySelectorAll(".user").forEach((user) => {
+      user.addEventListener("click", () => {
+        let recipient = Recipient.getByHashName(user.dataset.userId);
+        this.elems.recipientInput.value = recipient.login;
+      });
+    })
   }
 }
 

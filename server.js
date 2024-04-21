@@ -121,6 +121,21 @@ wss.on("connection", (connection, req) => {
       if (type === "get_public_vars") {
         connection.send(JSON.stringify({ type: "public_vars", params }));
       }
+      if (type === "user_online") {
+        const recipientConnection = connections.get(recipient);
+        if (
+          recipientConnection &&
+          recipientConnection.readyState === WebSocket.OPEN
+        ) {
+          connection.send(
+            JSON.stringify({ type: "user_online", status: true })
+          );
+        } else {
+          connection.send(
+            JSON.stringify({ type: "user_online", status: false })
+          );
+        }
+      }
       if (type === "public_key_exchange") {
         const recipientConnection = connections.get(recipient);
         if (

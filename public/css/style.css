@@ -49,7 +49,7 @@ a {
 }
 
 .notification.warning {
-    background-color: #bd6d11;
+    background-color: var(--bs-warning);
     color: #fff;
 }
 
@@ -85,7 +85,32 @@ a {
     top: 4px;
 }
 
+.online-marker {
+  position:absolute;
+  background-color: #707070;
+  width:18px;
+  height:18px;
+  top:6px;
+  left:6px;
+  border:3px solid #212529
+}
+.online-marker.online {
+  background-color:var(--bs-success)
+}
 
+.user {
+  cursor:pointer;
+  transition:.2s;
+}
+.user:hover {
+  background-color: #2a2e33;
+  border-radius:4px;
+  transition:.2s;
+}
+
+#usersList .user:hover .online-marker {
+  border-color: #2a2e33;
+}
 
 
 #preload-container {
@@ -139,4 +164,9 @@ a {
   opacity:0.5;
   line-height:1;
   font-size:32px;
+}
+
+.user-avatar-container .user-avatar.add-user-circle:after {
+  left:50%;
+  top:44%;
 }

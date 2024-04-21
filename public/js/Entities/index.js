@@ -8,6 +8,7 @@ window.CHAR_RETURN = 13;
 window.socket = new WebSocket("wss://" + window.location.host);
 
 window.TOStopTyping = [];
+window.TOCheckUserOnline = [];
 
 App.init();
 

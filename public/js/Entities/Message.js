@@ -8,6 +8,7 @@ import App from "./App.js";
 
 class Message {
   static messages = [];
+  static isUserCheckSended = false;
 
   constructor(
     sender,
@@ -57,6 +58,9 @@ class Message {
         if (data.type === "stop_typing") {
           this.handleStopTyping(data);
         }
+        if(data.type === 'user_online') {
+          this.handleUserOnline(data);
+        }
       }
     });
   }
@@ -76,7 +80,7 @@ class Message {
       return;
     }
     // if recipient not in list of recipients - send public key
-    if (!Recipient.isRecipientIsset(recipient)) {
+    if (!DiffieHellman.sharedKeys[recipient]) {
       const payload = JSON.stringify({
         type: "public_key_exchange",
         sender,
@@ -233,6 +237,7 @@ class Message {
       let senderName = Recipient.getName(data.sender);
       console.log(message);
       console.log("From " + senderName + ": " + message.content);
+      Recipient.getByHashName(data.sender).isOnline = true;
       DOM.displayMessageInChat(message);
       // DOM.writeLine("From " + senderName + ": " + message.content);
 
@@ -250,6 +255,7 @@ class Message {
     Tools.showNotification(`${Recipient.getName(data.sender)} disconnected`);
     DiffieHellman.sharedKeys[data.sender] = null;
     Recipient.getByHashName(data.sender).isOnline = false;
+    DOM.updateUserList();
   }
   static async handlePublicKeyExchange(data) {
     console.log(data);
@@ -259,7 +265,7 @@ class Message {
         data.key,
         DiffieHellman.privateKey
       );
-      console.log(!Recipient.isRecipientIsset(data.sender));
+      // console.log(!Recipient.isRecipientIsset(data.sender));
       if (!Recipient.isRecipientIsset(data.sender)) {
         socket.send(
           JSON.stringify({
@@ -270,14 +276,15 @@ class Message {
           })
         );
         Recipient.getByHashName(data.sender).setPublicKey(data.key);
-        console.log(Recipient.getByHashName(data.sender));
-        Tools.showNotification(
-          `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
-        );
+        Recipient.getByHashName(data.sender).isOnline = true;
+        // console.log(Recipient.getByHashName(data.sender));
+        // Tools.showNotification(
+        //   `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
+        // );
       } else {
-        Tools.showNotification(
-          `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
-        );
+        // Tools.showNotification(
+        //   `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
+        // );
       }
       if (App.funqueue.length > 0) {
         App.funqueue.shift()();
@@ -285,6 +292,8 @@ class Message {
     } else {
       App.funqueue = [];
       Tools.showNotification(`Recipient ${DOM.elems.recipientInput.value} not found or not connected.`, "warning");
+      DOM.elems.recipientInput.value = "";
+      Recipient.remove(data.sender);
     }
   }
   static handleSetSender(data) {
@@ -318,6 +327,28 @@ class Message {
   static handleStopTyping(data) {
     if (Recipient.isRecipientIsset(data.sender)) {
       Recipient.getByHashName(data.sender).changeTypingStatus(false);
+    }
+  }
+  static handleUserOnline(data) {
+    console.log(data);
+    if(data.status){
+      DOM.elems.addUserBtn.disabled = false;
+      if(DOM.get('.modal-body.add-user .alert')) {
+        DOM.get('.modal-body.add-user .alert').remove();
+      }
+      let alert = document.createElement('div');
+        alert.classList.add('alert', 'alert-success');
+        alert.innerHTML = `User ${DOM.elems.addUserInput.value} is online!`;
+        DOM.get('.modal-body.add-user').appendChild(alert);
+    } else {
+      DOM.elems.addUserBtn.disabled = true;
+      // add alert that user dont isset
+      if(DOM.elems.addUserInput.value.trim()) {
+        let alert = document.createElement('div');
+        alert.classList.add('alert', 'alert-danger');
+        alert.innerHTML = `User ${DOM.elems.addUserInput.value} not found or offline`;
+        DOM.get('.modal-body.add-user').appendChild(alert);
+      }
     }
   }
 
@@ -357,6 +388,17 @@ class Message {
         sender,
         recipient,
         message,
+      })
+    );
+  }
+  static async sendUserOnlineCheck() {
+    this.isUserCheckSended = true;
+    let recipient = await Tools.sha256(DOM.elems.addUserInput.value.trim());
+
+    socket.send(
+      JSON.stringify({
+        type: "user_online",
+        recipient,
       })
     );
   }
