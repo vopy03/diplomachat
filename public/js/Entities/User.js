@@ -30,7 +30,7 @@ class User {
       // DOM.elems.setSenderButton.disabled = true;
       // DOM.elems.senderInput.classList.add("disabled");
       // DOM.elems.setSenderButton.classList.add("disabled");
-      Tools.showNotification(`Sender code set: ${sender}`);
+      // Tools.showNotification(`Sender code set: ${sender}`);
     } else {
       Tools.showNotification("Please enter a valid sender code.");
     }

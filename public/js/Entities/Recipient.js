@@ -8,7 +8,7 @@ class Recipient {
     this.hashName = hashName;
     this.login = login;
     this.displayName = displayName;
-    this.publicKey = "";
+    this.publicKey = 0;
     this.isTyping = false;
     this.isOnline = true;
     this.bgcolor = '#333';

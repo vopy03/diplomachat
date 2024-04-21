@@ -136,6 +136,7 @@ class Message {
       console.log(payload);
       socket.send(payload);
       DOM.elems.msg.value = "";
+      DOM.elems.fileInput.value = "";
     } else {
       Tools.showNotification("Please fill in all fields.");
     }
@@ -225,15 +226,15 @@ class Message {
       Recipient.getByHashName(data.sender).displayName = message.displayName;
       console.log(message);
       message = Message.fromJSON(message.message);
-      if (message.attachments.length) {
-        for (let i = 0; i < message.attachments.length; i++) {
-          Tools.handleReceivedFile(
-            message.attachments[i].fileData,
-            message.attachments[i].fileName,
-            message.attachments[i].fileType
-          );
-        }
-      }
+      // if (message.attachments.length) {
+      //   for (let i = 0; i < message.attachments.length; i++) {
+      //     Tools.handleReceivedFile(
+      //       message.attachments[i].fileData,
+      //       message.attachments[i].fileName,
+      //       message.attachments[i].fileType
+      //     );
+      //   }
+      // }
       let senderName = Recipient.getName(data.sender);
       console.log(message);
       console.log("From " + senderName + ": " + message.content);
@@ -255,6 +256,7 @@ class Message {
     Tools.showNotification(`${Recipient.getName(data.sender)} disconnected`);
     DiffieHellman.sharedKeys[data.sender] = null;
     Recipient.getByHashName(data.sender).isOnline = false;
+    Recipient.getByHashName(data.sender).publicKey = 0;
     DOM.updateUserList();
   }
   static async handlePublicKeyExchange(data) {
@@ -266,7 +268,7 @@ class Message {
         DiffieHellman.privateKey
       );
       // console.log(!Recipient.isRecipientIsset(data.sender));
-      if (!Recipient.isRecipientIsset(data.sender)) {
+      if (!Recipient.isRecipientIsset(data.sender) || !Recipient.getByHashName(data.sender).publicKey) {
         socket.send(
           JSON.stringify({
             type: "public_key_exchange",
@@ -303,7 +305,7 @@ class Message {
       User.displayName = DOM.elems.displayName.value.trim();
       User.isServerApproved = true;
       DOM.toggleTab("main-tab");
-      Tools.showNotification(data.message);
+      // Tools.showNotification(data.message);
     } else {
       DOM.elems.setSenderButton.disabled = false;
       DOM.elems.senderInput.disabled = false;

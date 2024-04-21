@@ -187,7 +187,7 @@ wss.on("connection", (connection, req) => {
                 type: "set_sender",
                 status: false,
                 message:
-                  "Sender code already in use. Please try again with a different code.",
+                  "This login already in use. Please try again with a different one.",
               })
             );
             sender = undefined;
@@ -215,7 +215,7 @@ wss.on("connection", (connection, req) => {
       } else if (type === "message") {
         if (!sender) {
           connection.send(
-            "Sender code is not set. Please set the sender code first."
+            "Login is not set. Please set the login first."
           );
           return;
         }

@@ -70,42 +70,47 @@ class DOM {
     this.elems.addUserInput.addEventListener("input", () => {
       Message.isUserCheckSended = false;
       this.elems.addUserBtn.disabled = true;
-      if(DOM.get('.modal-body.add-user .alert')) {
-        DOM.get('.modal-body.add-user .alert').remove();
+      if (DOM.get(".modal-body.add-user .alert")) {
+        DOM.get(".modal-body.add-user .alert").remove();
       }
       clearTimeout(TOCheckUserOnline);
-      if(this.elems.addUserInput.value == User.login) {
-        let alert = document.createElement('div');
-        alert.classList.add('alert', 'alert-warning');
+      if (this.elems.addUserInput.value == User.login) {
+        let alert = document.createElement("div");
+        alert.classList.add("alert", "alert-warning");
         alert.innerHTML = `You can't add yourself`;
-        DOM.get('.modal-body.add-user').appendChild(alert);
+        DOM.get(".modal-body.add-user").appendChild(alert);
         return;
       }
-      if(Recipient.isRecipientIssetByLogin(this.elems.addUserInput.value.trim())) {
-        let alert = document.createElement('div');
-        alert.classList.add('alert', 'alert-warning');
+      if (
+        Recipient.isRecipientIssetByLogin(this.elems.addUserInput.value.trim())
+      ) {
+        let alert = document.createElement("div");
+        alert.classList.add("alert", "alert-warning");
         alert.innerHTML = `User is already added`;
-        DOM.get('.modal-body.add-user').appendChild(alert);
+        DOM.get(".modal-body.add-user").appendChild(alert);
         return;
       }
       TOCheckUserOnline = setTimeout(() => {
-        if(DOM.elems.addUserInput.value.trim() && this.elems.addUserInput.value != User.login) {
+        if (
+          DOM.elems.addUserInput.value.trim() &&
+          this.elems.addUserInput.value != User.login
+        ) {
           Message.sendUserOnlineCheck();
         }
-      }, 1000);
+      }, 500);
     });
     this.elems.addUserBtn.addEventListener("click", async () => {
       let hashName = await Tools.sha256(this.elems.addUserInput.value.trim());
       Recipient.add(hashName, this.elems.addUserInput.value.trim());
       this.updateUserList();
       // close modal
-      DOM.get('#exampleModal [data-bs-dismiss="modal"]').click()
-      this.elems.addUserInput.value = '';
+      DOM.get('#exampleModal [data-bs-dismiss="modal"]').click();
+      this.elems.addUserInput.value = "";
       this.elems.addUserBtn.disabled = true;
-      if(DOM.get('.modal-body.add-user .alert')) {
-        DOM.get('.modal-body.add-user .alert').remove();
+      if (DOM.get(".modal-body.add-user .alert")) {
+        DOM.get(".modal-body.add-user .alert").remove();
       }
-    })
+    });
 
     // this.elems.msg.addEventListener("keydown", (event) => {
     //   if (event.keyCode === CHAR_RETURN) {
@@ -133,38 +138,71 @@ class DOM {
     const line = document.createElement("div");
     let sender;
     let login;
+    let self = "";
     if (message.sender === User.hashName) {
       sender = User.getName();
       login = User.login;
+      self = 'class="text-end"';
     } else {
       sender = Recipient.getName(message.sender);
       login = Recipient.getByHashName(message.sender).login;
     }
-    line.innerHTML = `<div>
+    line.innerHTML = `<div ${self} data-id='${message.id}'>
       <p>${sender}: ${message.content}</p>
       <small>${login}</small>
     </div>
     `;
     this.elems.chat.appendChild(line);
+
+    if (message.attachments.length) {
+      for (let i = 0; i < message.attachments.length; i++) {
+        let fileData = message.attachments[i].fileData;
+        let fileName = message.attachments[i].fileName;
+        let fileType = message.attachments[i].fileType;
+
+        const blob = Tools.base64ToBlob(fileData, fileType);
+
+        // Create object URL for the Blob
+        const url = URL.createObjectURL(blob);
+
+        // Use the URL as the source for displaying or downloading the file
+        // For example, set it as the src attribute of an <img> or <a> element
+        const fileLink = document.createElement("a");
+        fileLink.href = url;
+        fileLink.download = fileName;
+        fileLink.textContent = `Download ${fileName}`;
+
+        this.elems.chat.querySelector('div[data-id="'+message.id+'"]').appendChild(fileLink); // Append the link to the document body or any other suitable location
+      }
+    }
   }
 
   static getRecipientUserListItem(recipient) {
-    let loginhtml ='';
-    let isOnline = recipient.isOnline ? 'online' : '';
-    if(recipient.displayName) {
-      loginhtml = '<span class="fs-6">'+recipient.login+'</span>';
-    } 
-    let html = 
-    '<div class="user d-flex mx-2 p-2" data-user-id="'+recipient.hashName+'">'+
-      '<div class="user-avatar-container position-relative p-2">'+
-        '<i class="user-avatar rounded-circle" data-letter="'+recipient.getName().charAt(0)+
-        '" style="background-color:'+recipient.bgcolor+'"></i>'+
-        '<i class="position-absolute rounded-circle online-marker ' + isOnline + '"></i>'+
-      '</div>'+
-      '<div class="d-flex flex-column justify-content-center">'+
-        '<span class="fs-5">'+recipient.getName()+'</span>' + loginhtml
-      '</div>'+
-    '</div>';
+    let loginhtml = "";
+    let isOnline = recipient.isOnline ? "online" : "";
+    if (recipient.displayName) {
+      loginhtml = '<span class="fs-6">' + recipient.login + "</span>";
+    }
+    let html =
+      '<div class="user d-flex mx-2 p-2" data-user-id="' +
+      recipient.hashName +
+      '">' +
+      '<div class="user-avatar-container position-relative p-2">' +
+      '<i class="user-avatar rounded-circle" data-letter="' +
+      recipient.getName().charAt(0) +
+      '" style="background-color:' +
+      recipient.bgcolor +
+      '"></i>' +
+      '<i class="position-absolute rounded-circle online-marker ' +
+      isOnline +
+      '"></i>' +
+      "</div>" +
+      '<div class="d-flex flex-column justify-content-center">' +
+      '<span class="fs-5">' +
+      recipient.getName() +
+      "</span>" +
+      loginhtml;
+    "</div>" + "</div>";
     return html;
   }
 
@@ -173,7 +211,7 @@ class DOM {
     Recipient.recipients.forEach((recipient) => {
       this.elems.usersList.innerHTML +=
         this.getRecipientUserListItem(recipient);
-        console.log(this.getRecipientUserListItem(recipient))
+      console.log(this.getRecipientUserListItem(recipient));
     });
 
     // init onuser click
@@ -182,7 +220,7 @@ class DOM {
         let recipient = Recipient.getByHashName(user.dataset.userId);
         this.elems.recipientInput.value = recipient.login;
       });
-    })
+    });
   }
 }
 
