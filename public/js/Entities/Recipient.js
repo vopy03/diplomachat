@@ -1,4 +1,5 @@
 import Message from "./Message.js";
+import User from "./User.js";
 
 class Recipient {
   static recipients = [];
@@ -9,23 +10,32 @@ class Recipient {
     this.displayName = displayName;
     this.publicKey = "";
     this.isTyping = false;
+    this.isOnline = false;
+    this.bgcolor = '#333';
   }
   static add(hashName, login = "", displayName = "") {
-    if(!Recipient.isRecipientIsset(hashName) && hashName) {
-      Recipient.recipients.push(new Recipient(hashName, login, displayName));
+    if (!Recipient.isRecipientIsset(hashName) && hashName && User.hashName != hashName) {
+      let recipient = new Recipient(hashName, login, displayName);
+      recipient.bgcolor = this.getRandomColor();
+      Recipient.recipients.push(recipient);
     }
+    // if(Recipient.isRecipientIsset(User.hashName)) {
+    //   Recipient.remove(User.hashName);
+    // }
+    DOM.updateUserList()
   }
   static remove(hashName) {
     Recipient.recipients = Recipient.recipients.filter(
       (recipient) => recipient.hashName !== hashName
     );
+    DOM.updateUserList()
   }
   remove() {
     Recipient.remove(this.hashName);
   }
   static getByHashName(hashName) {
     if (!Recipient.isRecipientIsset(hashName)) {
-      Recipient.add(hashName);
+      Recipient.add(hashName, DOM.elems.recipientInput.value);
     }
     return Recipient.recipients.find(
       (recipient) => recipient.hashName === hashName
@@ -46,6 +56,15 @@ class Recipient {
     }
     return hashName;
   }
+  getName() {
+    if (this.displayName) {
+      return this.displayName;
+    }
+    if (this.login) {
+      return this.login;
+    }
+    return this.hashName;
+  }
   setPublicKey(publicKey) {
     this.publicKey = publicKey;
   }
@@ -55,7 +74,7 @@ class Recipient {
 
   changeTypingStatus(status) {
     this.isTyping = status;
-    console.log(this)
+    console.log(this);
   }
 
   async sendMessage(message) {
@@ -67,7 +86,9 @@ class Recipient {
     message.send();
   }
   static isRecipientIsset(hashName) {
-    if(Recipient.recipients.find((recipient) => recipient.hashName === hashName)) {
+    if (
+      Recipient.recipients.find((recipient) => recipient.hashName === hashName)
+    ) {
       return true;
     } else {
       return false;
@@ -76,7 +97,20 @@ class Recipient {
   static getAllRecipientHashNames() {
     return this.recipients.map((recipient) => recipient.hashName);
   }
+
+  static getRandomColor() {
+    // Generate random values for red, green, and blue components
+    var r = Math.floor(Math.random() * 6) + 3; // Random value between 3 and 8
+    var g = Math.floor(Math.random() * 6) + 3;
+    var b = Math.floor(Math.random() * 6) + 3;
+
+    // Convert values to hexadecimal and concatenate them to form the color code
+    var color = "#" + r +g + b;
+
+    return color;
 }
 
+  
+}
 
 export default Recipient;

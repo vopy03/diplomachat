@@ -55,4 +55,7 @@ window.addEventListener('load', function() {
       document.getElementById('preload-container').style.display = 'none';
       document.getElementById('content').style.display = 'block';
   }, 1500); // Wait for 1.5 seconds (including the fade-out duration)
+
+  // for styling only
+  // DOM.toggleTab('main-tab')
 });

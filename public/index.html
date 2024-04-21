@@ -26,13 +26,13 @@
         <a href="/" class="d-flex p-3 align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
           <img src="img/logo.svg">
         </a>
-        <div class="status-bar">
+        <div class="status-bar ms-auto">
 
         </div>
 
-        <div class="text-end ms-auto">
+        <!-- <div class="text-end ms-auto">
           <button type="button" class="btn btn-outline-light me-2 lh-1"><i class="material-icons">settings</i></button>
-        </div>
+        </div> -->
       </div>
     </div>
   </header>
@@ -73,11 +73,21 @@
           <div class="row border-bottom"></div>
           <div class="row">
 
-            <section style="width:30%" class="users-section p-3 border-end">
-              <div id="usersList"></div>
+            <section class=" col-lg-4 users-section py-3 px-0 border-end">
+              <div id="usersList">
+                <div class="user d-flex p-2" data-user-id="">
+                  <div class='user-avatar-container p-2'>
+                    <i class="user-avatar rounded-circle" data-letter="d" style="background-color:#333"></i>
+                  </div>
+                  <div class="d-flex flex-column justify-content-center">
+                    <span class="fs-5">Display Name</span>
+                    <span class="fs-6">www</span>
+                  </div>
+                </div>
+              </div>
             </section>
 
-            <section style="width:70%" class="chat-section">
+            <section class="col-lg-8 chat-section">
               <input id="recipient" type="text" placeholder="Recipient's code" />
               <div class="chat-window" style="min-height:400px">
                 <div id="chat"></div>

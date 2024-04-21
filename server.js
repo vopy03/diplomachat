@@ -14,7 +14,7 @@ fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
     console.error("Error reading file:", err);
     return;
   }
-  primes = data.split('\r\n');
+  primes = data.split("\r\n");
   changeParams();
 });
 
@@ -128,10 +128,21 @@ wss.on("connection", (connection, req) => {
           recipientConnection.readyState === WebSocket.OPEN
         ) {
           recipientConnection.send(
-            JSON.stringify({ type, sender: senderCode, key: data.key })
+            JSON.stringify({
+              type,
+              status: true,
+              sender: senderCode,
+              key: data.key,
+            })
           );
         } else {
-          connection.send(`Recipient ${recipient} not found or not connected.`);
+          connection.send(
+            JSON.stringify({
+              type,
+              status: false,
+              message: `Recipient ${recipient} not found or not connected.`,
+            })
+          );
           // Handle recipient not found error here
         }
       }
@@ -200,10 +211,21 @@ wss.on("connection", (connection, req) => {
           recipientConnection.readyState === WebSocket.OPEN
         ) {
           recipientConnection.send(
-            JSON.stringify({ type, sender: senderCode, message: msg })
+            JSON.stringify({
+              type,
+              status: true,
+              sender: senderCode,
+              message: msg,
+            })
           );
         } else {
-          connection.send(`Recipient ${recipient} not found or not connected.`);
+          connection.send(
+            JSON.stringify({
+              type,
+              status: false,
+              message: `Recipient ${recipient} not found or not connected.`,
+            })
+          );
           // Handle recipient not found error here
         }
       }
@@ -252,11 +274,11 @@ function getPublicKnownVariables(k) {
 }
 
 function getRandomPrimeNum() {
-    // Get a random prime number
-    const randomIndex = Math.floor(Math.random() * primes.length);
-    const randomPrime = primes[randomIndex];
-    console.log("Random prime number:", randomPrime);
-    return randomPrime;
+  // Get a random prime number
+  const randomIndex = Math.floor(Math.random() * primes.length);
+  const randomPrime = primes[randomIndex];
+  console.log("Random prime number:", randomPrime);
+  return randomPrime;
 }
 function getRandomPrimeNumSmallerThan(num) {
   // Get another random prime number smaller than the first one

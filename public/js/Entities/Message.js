@@ -124,7 +124,7 @@ class Message {
     // console.log(stringToArrayBuffer(message));
     if (sender && recipient && message) {
       const payload = JSON.stringify({
-        type: 'message',
+        type: "message",
         sender,
         recipient,
         message,
@@ -237,6 +237,7 @@ class Message {
       // DOM.writeLine("From " + senderName + ": " + message.content);
 
       Message.messages.push(message);
+      DOM.updateUserList();
     }
 
     return;
@@ -247,38 +248,43 @@ class Message {
   }
   static handleDisconnectNotification(data) {
     Tools.showNotification(`${Recipient.getName(data.sender)} disconnected`);
-    Recipient.remove(data.sender);
+    DiffieHellman.sharedKeys[data.sender] = null;
+    Recipient.getByHashName(data.sender).isOnline = false;
   }
   static async handlePublicKeyExchange(data) {
     console.log(data);
     // recipientKey = data.key;
-
-    DiffieHellman.sharedKeys[data.sender] = await DiffieHellman.getSharedKey(
-      data.key,
-      DiffieHellman.privateKey
-    );
-    console.log(!Recipient.isRecipientIsset(data.sender))
-    if (!Recipient.isRecipientIsset(data.sender)) {
-      socket.send(
-        JSON.stringify({
-          type: "public_key_exchange",
-          sender: User.hashName,
-          recipient: data.sender,
-          key: Number(DiffieHellman.publicKey),
-        })
+    if (data.status) {
+      DiffieHellman.sharedKeys[data.sender] = await DiffieHellman.getSharedKey(
+        data.key,
+        DiffieHellman.privateKey
       );
-      Recipient.getByHashName(data.sender).setPublicKey(data.key);
-      console.log(Recipient.getByHashName(data.sender))
-      Tools.showNotification(
-        `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
-      );
+      console.log(!Recipient.isRecipientIsset(data.sender));
+      if (!Recipient.isRecipientIsset(data.sender)) {
+        socket.send(
+          JSON.stringify({
+            type: "public_key_exchange",
+            sender: User.hashName,
+            recipient: data.sender,
+            key: Number(DiffieHellman.publicKey),
+          })
+        );
+        Recipient.getByHashName(data.sender).setPublicKey(data.key);
+        console.log(Recipient.getByHashName(data.sender));
+        Tools.showNotification(
+          `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
+        );
+      } else {
+        Tools.showNotification(
+          `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
+        );
+      }
+      if (App.funqueue.length > 0) {
+        App.funqueue.shift()();
+      }
     } else {
-      Tools.showNotification(
-        `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
-      );
-    }
-    if (App.funqueue.length > 0) {
-      App.funqueue.shift()();
+      App.funqueue = [];
+      Tools.showNotification(`Recipient ${DOM.elems.recipientInput.value} not found or not connected.`, "warning");
     }
   }
   static handleSetSender(data) {
@@ -287,12 +293,12 @@ class Message {
       User.login = DOM.elems.senderInput.value.trim();
       User.displayName = DOM.elems.displayName.value.trim();
       User.isServerApproved = true;
-      DOM.toggleTab('main-tab')
+      DOM.toggleTab("main-tab");
       Tools.showNotification(data.message);
     } else {
       DOM.elems.setSenderButton.disabled = false;
       DOM.elems.senderInput.disabled = false;
-      Tools.showNotification(data.message, 'danger');
+      Tools.showNotification(data.message, "danger");
     }
   }
   static handlePublicVars(data) {
@@ -305,12 +311,12 @@ class Message {
   }
   static handleTyping(data) {
     console.log(data);
-    if(Recipient.isRecipientIsset(data.sender)) {
+    if (Recipient.isRecipientIsset(data.sender)) {
       Recipient.getByHashName(data.sender).changeTypingStatus(true);
     }
   }
   static handleStopTyping(data) {
-    if(Recipient.isRecipientIsset(data.sender)) {
+    if (Recipient.isRecipientIsset(data.sender)) {
       Recipient.getByHashName(data.sender).changeTypingStatus(false);
     }
   }
