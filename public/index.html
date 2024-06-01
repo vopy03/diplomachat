@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Chat</title>
+  <title>ClearTalk | Storage-free web messaging</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="js/forge.min.js"></script>
@@ -12,6 +12,7 @@
   <script src="js/popper.min.js"></script>
   <link href="css/icon.css" rel="stylesheet">
   <script src="js/bootstrap.min.js" defer></script>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <!-- <script src="js/Entities/index.js" defer></script> -->
   <script type="module" src="js/Entities/index.js"></script>
   <link rel="preload" href="img/logo-anim.svg" as="image">
@@ -26,8 +27,14 @@
         <a href="/" class="d-flex p-3 align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
           <img src="img/logo.svg">
         </a>
-        <div class="status-bar ms-auto">
-
+        <div class="status-bar d-flex gap-3 ms-auto" id="status-bar">
+          <div class="user-avatar-container">
+            <!-- <i class="user-avatar rounded-circle" data-letter="w" style="background-color:#447"></i> -->
+          </div>
+          <div class="d-flex name-container flex-column">
+            <!-- <div class="name">Visible Name</div>
+            <div class="login">www</div> -->
+          </div>
         </div>
 
         <!-- <div class="text-end ms-auto">
@@ -37,7 +44,7 @@
     </div>
   </header>
   <main class="my-4">
-    <div class="container">
+    <div class="container-fluid">
       <div id="preload-container">
         <div id="preload-content">
           <img src="img/logo.svg" width="300" height="57" alt="Logo" id="logo">
@@ -71,7 +78,7 @@
         </div>
         <div class="main-tab p-5 ct-tab">
           <div class="row border-bottom"></div>
-          <div class="row">
+          <div class="row h-100">
 
             <section class=" col-lg-4 users-section py-3 px-0 border-end">
               <div class="h-100">
@@ -101,7 +108,8 @@
                   </div>
                 </div>
 
-                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                  aria-hidden="true">
                   <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                       <div class="modal-header">
@@ -125,9 +133,9 @@
               </div>
             </section>
 
-            <section class="col-lg-8 chat-section">
+            <section class="col-lg-8 chat-section d-flex flex-column position-relative p-0">
               <input id="recipient" type="hidden" placeholder="Recipient's code" />
-              <div class="chat-window" style="min-height:400px">
+              <div class="chat-window flex-grow-1">
                 <div id="chat"></div>
               </div>
               <div class="chat-section-bottom d-flex flex-row card p-3">
@@ -144,8 +152,12 @@
                       <emoji-picker></emoji-picker>
                     </div>
                   </div>
+                  <input type="file" id="file-input" multiple style="display: none;">
+                  <label for="file-input" class="file-label position-absolute">
+                    <span class="material-icons">attach_file</span>
+                  </label>
                 </div>
-                <input type="file" id="file-input">
+
 
                 <a id="sendButton" class="btn border-0"><i class="material-icons">send</i></a>
               </div>

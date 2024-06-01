@@ -14,7 +14,7 @@ App.init();
 
 socket.addEventListener("open", () => {
   // writeLine("connected");
-  Tools.showNotification("Connected to websocket", "success");
+  Tools.showNotification("Connected to server", "success");
   Tools.getPublicVars();
 });
 

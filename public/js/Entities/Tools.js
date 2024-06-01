@@ -188,6 +188,40 @@ class Tools {
 
     document.body.appendChild(fileLink); // Append the link to the document body or any other suitable location
   }
+
+  static async fileExists(filePath) {
+    // return true of false
+    try {
+      const response = await fetch(filePath);
+      return response.ok;
+    } catch (error) {
+      // console.error(error);
+      return false;
+    }
+  }
+
+  static getRandomColor() {
+    // Generate random values for red, green, and blue components
+    var r = Math.floor(Math.random() * 6) + 3; // Random value between 3 and 8
+    var g = Math.floor(Math.random() * 6) + 3;
+    var b = Math.floor(Math.random() * 6) + 3;
+
+    // Convert values to hexadecimal and concatenate them to form the color code
+    var color = "#" + r + g + b;
+
+    return color;
+  }
+  static formatFileSize(size) {
+    const units = ["Bytes", "KB", "MB", "GB", "TB"];
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
+  }
 }
 
 export default Tools;

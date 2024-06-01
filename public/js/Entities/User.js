@@ -10,6 +10,7 @@ class User {
 
   static setHashName(hashName) {
     this.hashName = hashName;
+    User.bgColor = Tools.getRandomColor();
   }
   static setLogin(login) {
     this.login = login;
@@ -19,7 +20,7 @@ class User {
     // if sender is empty or has 3 or less symbols
     let sender = DOM.elems.senderInput.value.trim();
     if (!sender || sender.length < 3) {
-      Tools.showNotification("Please enter a valid sender code.", "info");
+      Tools.showNotification("Please enter a valid login name.", "warning");
       return;
     }
     sender = await Tools.sha256(DOM.elems.senderInput.value.trim());

@@ -387,7 +387,7 @@ socket.addEventListener("message", async ({ data }) => {
 });
 
 msg.addEventListener("keydown", (event) => {
-  if (event.keyCode === CHAR_RETURN) {
+  if (event.key === 'Enter' && !event.shiftKey) {
     sendMessage();
   }
 });

@@ -58,7 +58,7 @@ class Message {
         if (data.type === "stop_typing") {
           this.handleStopTyping(data);
         }
-        if(data.type === 'user_online') {
+        if (data.type === "user_online") {
           this.handleUserOnline(data);
         }
       }
@@ -91,7 +91,6 @@ class Message {
       App.funqueue.push(Tools.wrapFunctionQueue(this.sendMessage, this));
       return;
     }
-
     let messageObj = Message.fromText(
       DOM.elems.msg.value.trim(),
       recipient,
@@ -101,16 +100,29 @@ class Message {
     // console.log(message);
     let attachments = [];
     if (DOM.elems.fileInput.files.length > 0) {
-      let file = DOM.elems.fileInput.files[0];
-      let fileData = await Tools.readFileAsArrayBuffer(file);
-      let base64Data = Tools.arrayBufferToBase64(fileData);
-      attachments.push({
-        fileName: file.name,
-        fileType: file.type,
-        fileData: base64Data,
-      });
+      for (let i = 0; i < DOM.elems.fileInput.files.length; i++) {
+        let fileData = await Tools.readFileAsArrayBuffer(DOM.elems.fileInput.files[i]);
+        let base64Data = Tools.arrayBufferToBase64(fileData);
+        attachments.push({
+          fileName: DOM.elems.fileInput.files[i].name,
+          fileType: DOM.elems.fileInput.files[i].type,
+          fileSize: DOM.elems.fileInput.files[i].size,
+          fileData: base64Data,
+        });
+      }
+      // let file = DOM.elems.fileInput.files[0];
+      // let fileData = await Tools.readFileAsArrayBuffer(file);
+      // let base64Data = Tools.arrayBufferToBase64(fileData);
+      // attachments.push({
+      //   fileName: file.name,
+      //   fileType: file.type,
+      //   fileData: base64Data,
+      // });
     }
     messageObj.attachments = attachments;
+    if(!messageObj.content && !messageObj.attachments.length) {
+      return;
+    }
     let message = JSON.stringify({
       sender: User.login,
       displayName: User.displayName,
@@ -240,6 +252,7 @@ class Message {
       console.log("From " + senderName + ": " + message.content);
       Recipient.getByHashName(data.sender).isOnline = true;
       DOM.displayMessageInChat(message);
+      DOM.updateUserTypingMessage(Recipient.getByHashName(data.sender))
       // DOM.writeLine("From " + senderName + ": " + message.content);
 
       Message.messages.push(message);
@@ -253,11 +266,13 @@ class Message {
     return;
   }
   static handleDisconnectNotification(data) {
-    Tools.showNotification(`${Recipient.getName(data.sender)} disconnected`);
-    DiffieHellman.sharedKeys[data.sender] = null;
-    Recipient.getByHashName(data.sender).isOnline = false;
-    Recipient.getByHashName(data.sender).publicKey = 0;
-    DOM.updateUserList();
+    if (Recipient.isRecipientIsset(data.sender)) {
+      Tools.showNotification(`${Recipient.getName(data.sender)} disconnected`);
+      DiffieHellman.sharedKeys[data.sender] = null;
+      Recipient.getByHashName(data.sender).isOnline = false;
+      Recipient.getByHashName(data.sender).publicKey = 0;
+      DOM.updateUserList();
+    }
   }
   static async handlePublicKeyExchange(data) {
     console.log(data);
@@ -268,7 +283,10 @@ class Message {
         DiffieHellman.privateKey
       );
       // console.log(!Recipient.isRecipientIsset(data.sender));
-      if (!Recipient.isRecipientIsset(data.sender) || !Recipient.getByHashName(data.sender).publicKey) {
+      if (
+        !Recipient.isRecipientIsset(data.sender) ||
+        !Recipient.getByHashName(data.sender).publicKey
+      ) {
         socket.send(
           JSON.stringify({
             type: "public_key_exchange",
@@ -293,7 +311,10 @@ class Message {
       }
     } else {
       App.funqueue = [];
-      Tools.showNotification(`Recipient ${DOM.elems.recipientInput.value} not found or not connected.`, "warning");
+      Tools.showNotification(
+        `Recipient ${DOM.elems.recipientInput.value} not found or not connected.`,
+        "warning"
+      );
       DOM.elems.recipientInput.value = "";
       Recipient.remove(data.sender);
     }
@@ -305,6 +326,7 @@ class Message {
       User.displayName = DOM.elems.displayName.value.trim();
       User.isServerApproved = true;
       DOM.toggleTab("main-tab");
+      DOM.setUserInfoToStatusBar()
       // Tools.showNotification(data.message);
     } else {
       DOM.elems.setSenderButton.disabled = false;
@@ -323,33 +345,37 @@ class Message {
   static handleTyping(data) {
     console.log(data);
     if (Recipient.isRecipientIsset(data.sender)) {
-      Recipient.getByHashName(data.sender).changeTypingStatus(true);
+      let recipient = Recipient.getByHashName(data.sender);
+      recipient.changeTypingStatus(true);
+      DOM.updateUserTypingMessage(recipient)
     }
   }
   static handleStopTyping(data) {
     if (Recipient.isRecipientIsset(data.sender)) {
-      Recipient.getByHashName(data.sender).changeTypingStatus(false);
+      let recipient = Recipient.getByHashName(data.sender);
+      recipient.changeTypingStatus(false);
+      DOM.updateUserTypingMessage(recipient)
     }
   }
   static handleUserOnline(data) {
     console.log(data);
-    if(data.status){
+    if (data.status) {
       DOM.elems.addUserBtn.disabled = false;
-      if(DOM.get('.modal-body.add-user .alert')) {
-        DOM.get('.modal-body.add-user .alert').remove();
+      if (DOM.get(".modal-body.add-user .alert")) {
+        DOM.get(".modal-body.add-user .alert").remove();
       }
-      let alert = document.createElement('div');
-        alert.classList.add('alert', 'alert-success');
-        alert.innerHTML = `User ${DOM.elems.addUserInput.value} is online!`;
-        DOM.get('.modal-body.add-user').appendChild(alert);
+      let alert = document.createElement("div");
+      alert.classList.add("alert", "alert-success");
+      alert.innerHTML = `User ${DOM.elems.addUserInput.value} is online!`;
+      DOM.get(".modal-body.add-user").appendChild(alert);
     } else {
       DOM.elems.addUserBtn.disabled = true;
       // add alert that user dont isset
-      if(DOM.elems.addUserInput.value.trim()) {
-        let alert = document.createElement('div');
-        alert.classList.add('alert', 'alert-danger');
+      if (DOM.elems.addUserInput.value.trim()) {
+        let alert = document.createElement("div");
+        alert.classList.add("alert", "alert-danger");
         alert.innerHTML = `User ${DOM.elems.addUserInput.value} not found or offline`;
-        DOM.get('.modal-body.add-user').appendChild(alert);
+        DOM.get(".modal-body.add-user").appendChild(alert);
       }
     }
   }

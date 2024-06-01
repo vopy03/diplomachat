@@ -1,5 +1,6 @@
 import Message from "./Message.js";
 import User from "./User.js";
+import Tools from "./Tools.js";
 
 class Recipient {
   static recipients = [];
@@ -16,7 +17,7 @@ class Recipient {
   static add(hashName, login = "", displayName = "") {
     if (!Recipient.isRecipientIsset(hashName) && hashName && User.hashName != hashName) {
       let recipient = new Recipient(hashName, login, displayName);
-      recipient.bgcolor = this.getRandomColor();
+      recipient.bgcolor = Tools.getRandomColor();
       Recipient.recipients.push(recipient);
     }
     // if(Recipient.isRecipientIsset(User.hashName)) {
@@ -107,17 +108,7 @@ class Recipient {
     return this.recipients.map((recipient) => recipient.hashName);
   }
 
-  static getRandomColor() {
-    // Generate random values for red, green, and blue components
-    var r = Math.floor(Math.random() * 6) + 3; // Random value between 3 and 8
-    var g = Math.floor(Math.random() * 6) + 3;
-    var b = Math.floor(Math.random() * 6) + 3;
-
-    // Convert values to hexadecimal and concatenate them to form the color code
-    var color = "#" + r +g + b;
-
-    return color;
-}
+  
 
   
 }
