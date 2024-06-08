@@ -101,7 +101,9 @@ class Message {
     let attachments = [];
     if (DOM.elems.fileInput.files.length > 0) {
       for (let i = 0; i < DOM.elems.fileInput.files.length; i++) {
-        let fileData = await Tools.readFileAsArrayBuffer(DOM.elems.fileInput.files[i]);
+        let fileData = await Tools.readFileAsArrayBuffer(
+          DOM.elems.fileInput.files[i]
+        );
         let base64Data = Tools.arrayBufferToBase64(fileData);
         attachments.push({
           fileName: DOM.elems.fileInput.files[i].name,
@@ -120,7 +122,7 @@ class Message {
       // });
     }
     messageObj.attachments = attachments;
-    if(!messageObj.content && !messageObj.attachments.length) {
+    if (!messageObj.content && !messageObj.attachments.length) {
       return;
     }
     let message = JSON.stringify({
@@ -149,6 +151,11 @@ class Message {
       socket.send(payload);
       DOM.elems.msg.value = "";
       DOM.elems.fileInput.value = "";
+
+      let attachmentsBlock = DOM.get(".chat-section-bottom #attachments-block");
+      if (attachmentsBlock) {
+        attachmentsBlock.innerHTML = "";
+      }
     } else {
       Tools.showNotification("Please fill in all fields.");
     }
@@ -251,9 +258,9 @@ class Message {
       console.log(message);
       console.log("From " + senderName + ": " + message.content);
       Recipient.getByHashName(data.sender).isOnline = true;
+
       DOM.displayMessageInChat(message);
-      DOM.updateUserTypingMessage(Recipient.getByHashName(data.sender))
-      // DOM.writeLine("From " + senderName + ": " + message.content);
+      DOM.updateUserTypingMessage(Recipient.getByHashName(data.sender));
 
       Message.messages.push(message);
       DOM.updateUserList();
@@ -326,7 +333,7 @@ class Message {
       User.displayName = DOM.elems.displayName.value.trim();
       User.isServerApproved = true;
       DOM.toggleTab("main-tab");
-      DOM.setUserInfoToStatusBar()
+      DOM.setUserInfoToStatusBar();
       // Tools.showNotification(data.message);
     } else {
       DOM.elems.setSenderButton.disabled = false;
@@ -347,14 +354,14 @@ class Message {
     if (Recipient.isRecipientIsset(data.sender)) {
       let recipient = Recipient.getByHashName(data.sender);
       recipient.changeTypingStatus(true);
-      DOM.updateUserTypingMessage(recipient)
+      DOM.updateUserTypingMessage(recipient);
     }
   }
   static handleStopTyping(data) {
     if (Recipient.isRecipientIsset(data.sender)) {
       let recipient = Recipient.getByHashName(data.sender);
       recipient.changeTypingStatus(false);
-      DOM.updateUserTypingMessage(recipient)
+      DOM.updateUserTypingMessage(recipient);
     }
   }
   static handleUserOnline(data) {

@@ -127,12 +127,18 @@ a {
   outline: none;
 }
 
+.chat-window:has(.chat-tab.active) {
+  background: rgb(66, 66, 66);
+  background: linear-gradient(347deg, rgba(66, 66, 66, 0) 0%, rgb(187 187 187 / 4%) 100%);
+}
+
 .chat-section-bottom {
   align-items: center;
 }
+
 .file-label {
   right: 4px;
-  bottom: 0;
+  bottom: 6px;
 }
 
 .chat-section:not(:has(.chat-tab.active)) .chat-section-bottom {
@@ -271,12 +277,50 @@ a {
 .message .attachment {
   background-color: #5c5c5c;
 }
+
 .message .attachment .file-name {
   font-weight: 600;
   max-width: 200px;
 }
+
 .message .attachment .file-size {
   font-size: 12px;
+}
+
+
+#attachments-block .attachment {
+  background-color: #404143;
+
+  .remove-attachment-btn {
+    color: white;
+    cursor: pointer;
+  }
+}
+
+.new-message-notification {
+  width: 96%;
+  height: 1px;
+  margin-block: 20px;
+  background-color: #999999;
+  bottom: 112px;
+  z-index: 1;
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.new-message-notification:after {
+  background-color: #24282c;
+  content: 'New messages';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px;
+}
+
+.new-message-notification.visible {
+  opacity: 0.7;
+  transition: 0.3s;
 }
 
 .user-avatar-container .user-avatar:after {

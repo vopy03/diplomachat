@@ -69,7 +69,7 @@ class DOM {
       }
     });
 
-    this.elems.fileInput.addEventListener("change", (event) => {
+    this.elems.fileInput.addEventListener("change", async (event) => {
       // check every file
       let attahmentsSize = 0;
       for (let i = 0; i < event.target.files.length; i++) {
@@ -86,6 +86,25 @@ class DOM {
           "danger"
         );
         this.elems.fileInput.value = "";
+      }
+
+      // show attached files to user
+      if (this.elems.fileInput.files.length > 0) {
+        let attachmentsBlock = this.get(
+          ".chat-section-bottom #attachments-block"
+        );
+        if (attachmentsBlock) {
+          attachmentsBlock.innerHTML = "";
+          let fileBlock;
+          for (let i = 0; i < event.target.files.length; i++) {
+            let file = event.target.files[i];
+            if (file) {
+              fileBlock = await this.getFileBlock(file);
+              console.log(fileBlock);
+              attachmentsBlock.append(fileBlock);
+            }
+          }
+        }
       }
     });
     this.elems.msg.addEventListener("input", () => {
@@ -169,10 +188,14 @@ class DOM {
 
   static async displayMessageInChat(message) {
     console.log(message);
+    let forceScroll = false;
     this.createChatTabs();
     const line = document.createElement("div");
     line.classList.add("message");
     line.setAttribute("data-message-id", message.id);
+    console.log(message.content);
+    // replace /n an <br>
+    message.content = message.content.replace(/\n/g, "<br>");
     if (message.sender === User.hashName) {
       line.classList.add("self-message");
       line.innerHTML = `<div class='message-content'>
@@ -180,6 +203,7 @@ class DOM {
       </div>
       <br>
     `;
+      forceScroll = true;
     } else {
       let sender = Recipient.getByHashName(message.sender);
       line.innerHTML = `<div class="user-avatar-container align-self-baseline position-relative p-2">
@@ -210,41 +234,7 @@ class DOM {
     console.log(message.attachments.length);
     if (message.attachments.length) {
       for (let i = 0; i < message.attachments.length; i++) {
-        let fileData = message.attachments[i].fileData;
-        let fileSize = message.attachments[i].fileSize;
-        let fileName = message.attachments[i].fileName;
-        let fileType = message.attachments[i].fileType;
-        console.log(fileType);
-        let fileIcon;
-        let fileExt = fileName.split(".").pop();
-
-        // split by /
-        let splitFileType = fileType.split("/");
-        // check if icon isset in icons folder
-        if (await Tools.fileExists(`./img/icons/${splitFileType[0]}.svg`)) {
-          fileIcon = `<img width="30" src="./img/icons/${splitFileType[0]}.svg" alt="${splitFileType[0]}">`;
-        } else if (
-          await Tools.fileExists(`./img/icons/${splitFileType[1]}.svg`)
-        ) {
-          fileIcon = `<img width="30" src="./img/icons/${splitFileType[1]}.svg" alt="${splitFileType[1]}">`;
-        } else if (await Tools.fileExists(`./img/icons/${fileExt}.svg`)) {
-          fileIcon = `<img width="30" src="./img/icons/${fileExt}.svg" alt="${fileExt}">`;
-        } else {
-          fileIcon = `<img width="30" src="./img/icons/file.svg" alt="file">`;
-        }
-
-        const blob = Tools.base64ToBlob(fileData, fileType);
-
-        // Create object URL for the Blob
-        const url = URL.createObjectURL(blob);
-
-        // Use the URL as the source for displaying or downloading the file
-        // For example, set it as the src attribute of an <img> or <a> element
-        const fileLink = document.createElement("a");
-        fileLink.href = url;
-        fileLink.download = fileName;
-        fileLink.innerHTML = `<div class='d-flex gap-2 m-2 p-2 rounded attachment'>${fileIcon} <div class='d-flex text-start flex-column'><span class='file-name lh-1'>${fileName}</span><span class='file-size'>${Tools.formatFileSize(fileSize)}</span></div></div>`;
-
+        let fileLink = await this.getFileBlock(message.attachments[i], true);
         chatTab
           .querySelector(
             'div[data-message-id="' + message.id + '"] .message-content'
@@ -252,8 +242,78 @@ class DOM {
           .appendChild(fileLink); // Append the link to the document body or any other suitable location
       }
     }
+    DOM.scrollChatToTheBottom(chatTab, forceScroll);
   }
+  static async getFileBlock(file, isLink = false) {
+    let fileData = file.fileData;
+    let fileSize = file.fileSize;
+    let fileName = file.fileName;
+    let fileType = file.fileType;
 
+    if (file instanceof File) {
+      fileName = file.name;
+      fileType = file.type;
+      fileSize = file.size;
+    }
+    // window.TESTfile = file
+    // console.log(file.__proto__)
+    // console.log(file.__proto__ == File)
+    // console.log(fileType);
+    let fileIcon;
+    let fileExt = fileName.split(".").pop();
+
+    // split by /
+    let splitFileType = fileType.split("/");
+    // check if icon isset in icons folder
+    if (await Tools.fileExists(`./img/icons/${splitFileType[0]}.svg`)) {
+      fileIcon = `<img width="30" src="./img/icons/${splitFileType[0]}.svg" alt="${splitFileType[0]}">`;
+    } else if (await Tools.fileExists(`./img/icons/${splitFileType[1]}.svg`)) {
+      fileIcon = `<img width="30" src="./img/icons/${splitFileType[1]}.svg" alt="${splitFileType[1]}">`;
+    } else if (await Tools.fileExists(`./img/icons/${fileExt}.svg`)) {
+      fileIcon = `<img width="30" src="./img/icons/${fileExt}.svg" alt="${fileExt}">`;
+    } else {
+      fileIcon = `<img width="30" src="./img/icons/file.svg" alt="file">`;
+    }
+
+    // Use the URL as the source for displaying or downloading the file
+    // For example, set it as the src attribute of an <img> or <a> element
+    let fileLink = document.createElement("a");
+    if (isLink) {
+      const blob = Tools.base64ToBlob(fileData, fileType);
+
+      // Create object URL for the Blob
+      const url = URL.createObjectURL(blob);
+      fileLink = document.createElement("a");
+      fileLink.href = url;
+      fileLink.download = fileName;
+    } else {
+      fileLink = document.createElement("div");
+    }
+    fileLink.innerHTML = `<div class='d-flex gap-2 m-2 p-2 rounded attachment'>${fileIcon} <div class='d-flex text-start flex-column'><span class='file-name lh-1'>${fileName}</span><span class='file-size'>${Tools.formatFileSize(
+      fileSize
+    )}</span></div></div>`;
+    if (!isLink) {
+      // add remove button
+      let removeBtn = document.createElement("a");
+      removeBtn.innerHTML = `<i class="material-icons">close</i>`;
+      removeBtn.classList.add("remove-attachment-btn");
+      removeBtn.addEventListener("click", () => {
+        fileLink.remove();
+        // remove this specific file from files input value
+        let files = DOM.elems.fileInput.files;
+        let fileName = fileLink.querySelector(".file-name").textContent;
+        const dataTransfer = new DataTransfer(); // Create a new DataTransfer object
+        for (let i = 0; i < files.length; i++) {
+          if (files[i].name !== fileName) {
+            dataTransfer.items.add(files[i]);
+          }
+        }
+        DOM.elems.fileInput.files = dataTransfer.files;
+      });
+      fileLink.querySelector(".attachment").appendChild(removeBtn);
+    }
+    return fileLink;
+  }
   static createChatTabs() {
     Recipient.recipients.forEach((recipient) => {
       if (
@@ -269,7 +329,7 @@ class DOM {
         <i class="material-icons">close</i>
       </div>
     </div>
-    <div class="chat-tab-body"></div>`;
+    <div class="chat-tab-body"><div class='new-message-notification position-absolute'></div></div>`;
       this.elems.chat
         .querySelector(
           `[data-chat-id="${recipient.hashName}"] .chat-tab-close-btn`
@@ -358,6 +418,7 @@ class DOM {
         </div>
         <br></div>`
       );
+      DOM.scrollChatToTheBottom(chatTab, false, true);
     }
   }
 
@@ -390,6 +451,68 @@ class DOM {
             "beforeend",
             `<div class="login">${User.login}</div>`
           );
+      }
+    }
+  }
+
+  // chat scroll
+
+  static isNearBottom(chat) {
+    if (!chat) {
+      return;
+    }
+    const threshold = 50; // Distance from bottom to be considered "near bottom"
+    let chatBody = chat.querySelector(".chat-tab-body");
+    if (!chatBody.onscroll) {
+      chatBody.onscroll = (e) => {
+        if (DOM.isNearBottom(e.target.closest(".chat-tab"))) {
+          DOM.hideNewMessageNotification(e.target.closest(".chat-tab"));
+        }
+      };
+    }
+    console.log(
+      "chatBody.scrollTop + chatBody.clientHeight >= chatBody.scrollHeight - threshold"
+    );
+    console.log(
+      chatBody.scrollTop + chatBody.clientHeight >=
+        chatBody.scrollHeight - threshold
+    );
+    return (
+      chatBody.scrollTop + chatBody.clientHeight >=
+      chatBody.scrollHeight - threshold
+    );
+  }
+
+  static showNewMessageNotification(chat) {
+    if (!chat) {
+      return;
+    }
+    chat.querySelector(".new-message-notification").classList.add("visible");
+  }
+  static hideNewMessageNotification(chat) {
+    if (!chat) {
+      return;
+    }
+    chat.querySelector(".new-message-notification").classList.remove("visible");
+  }
+
+  static scrollChatToTheBottom(chat, force = false, typing = false) {
+    if (!chat) {
+      return;
+    }
+    if (force) {
+      let chatBody = chat.querySelector(".chat-tab-body");
+      chatBody.scrollTop = chatBody.scrollHeight; // Scroll to the bottom
+      this.hideNewMessageNotification(chat);
+      return;
+    }
+    if (this.isNearBottom(chat)) {
+      let chatBody = chat.querySelector(".chat-tab-body");
+      chatBody.scrollTop = chatBody.scrollHeight; // Scroll to the bottom
+      this.hideNewMessageNotification(chat);
+    } else {
+      if (!typing) {
+        this.showNewMessageNotification(chat);
       }
     }
   }

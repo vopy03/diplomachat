@@ -140,26 +140,34 @@
               </div>
               <div class="chat-section-bottom d-flex flex-row card p-3">
 
-                <div class="position-relative d-flex w-100">
-                  <textarea id="msg" class="w-100"></textarea>
+                <div class="d-flex flex-column w-100">
+                  <div class="position-relative d-flex align-items-center">
+                    <div class="position-relative w-100">
+                      <textarea id="msg" class="w-100"></textarea>
 
-                  <div class="dropdown position-absolute emoji-dropdown">
-                    <a class="text-secondary position-absolute" type="button" data-bs-toggle="dropdown"
-                      aria-expanded="false">
-                      <i class="material-icons">mood</i>
-                    </a>
-                    <div class="dropdown-menu">
-                      <emoji-picker></emoji-picker>
+                      <div class="dropdown position-absolute emoji-dropdown">
+                        <a class="text-secondary position-absolute" type="button" data-bs-toggle="dropdown"
+                          aria-expanded="false">
+                          <i class="material-icons">mood</i>
+                        </a>
+                        <div class="dropdown-menu">
+                          <emoji-picker></emoji-picker>
+                        </div>
+                      </div>
+                      <input type="file" id="file-input" multiple style="display: none;">
+                      <label for="file-input" class="file-label position-absolute">
+                        <span class="material-icons">attach_file</span>
+                      </label>
+                    </div>
+                    <div>
+                      <a id="sendButton" class="btn border-0"><i class="material-icons">send</i></a>
                     </div>
                   </div>
-                  <input type="file" id="file-input" multiple style="display: none;">
-                  <label for="file-input" class="file-label position-absolute">
-                    <span class="material-icons">attach_file</span>
-                  </label>
+                  <div id="attachments-block" class="d-flex flex-wrap"></div>
                 </div>
 
 
-                <a id="sendButton" class="btn border-0"><i class="material-icons">send</i></a>
+
               </div>
             </section>
           </div>
