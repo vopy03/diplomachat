@@ -222,6 +222,13 @@ class Tools {
 
     return `${size.toFixed(2)} ${units[unitIndex]}`;
   }
+
+  static formatSendingTime(date) {
+    return new Intl.DateTimeFormat("uk-ua", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
 }
 
 export default Tools;

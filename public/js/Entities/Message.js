@@ -18,7 +18,7 @@ class Message {
     attachments = [],
     reactions = [],
     date = Date.now(),
-    senderInfo = { login: User.login, displayName: User.displayName }
+    seen = false
   ) {
     this.sender = sender;
     this.recipient = recipient;
@@ -27,8 +27,10 @@ class Message {
     this.attachments = attachments;
     this.reactions = reactions;
     this.date = date;
+    this.seen = seen;
     this.encryptedContent = "";
   }
+
   static init() {
     socket.addEventListener("message", async ({ data }) => {
       if (Tools.isJSON(data)) {
@@ -66,6 +68,22 @@ class Message {
   }
   static async sendMessage() {
     let sender;
+
+    if (socket.readyState !== WebSocket.OPEN) {
+      Tools.showNotification(
+        "Connection to websocket is closed. Reload page to use ClearTalk.",
+        "error"
+      );
+
+      DOM.elems.msg.value = "";
+      DOM.elems.fileInput.value = "";
+
+      let attachmentsBlock = DOM.get(".chat-section-bottom #attachments-block");
+      if (attachmentsBlock) {
+        attachmentsBlock.innerHTML = "";
+      }
+      return;
+    }
     if (User.hashName) {
       sender = User.hashName;
     } else {

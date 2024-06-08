@@ -199,7 +199,11 @@ class DOM {
     if (message.sender === User.hashName) {
       line.classList.add("self-message");
       line.innerHTML = `<div class='message-content'>
+      <div>
       <p>${message.content}</p>
+      <div class='attachments'></div>
+      </div>
+      <small class='send-time'>${Tools.formatSendingTime(message.date)}</small>
       </div>
       <br>
     `;
@@ -212,7 +216,11 @@ class DOM {
         .charAt(0)}" style="background-color:${sender.bgcolor}"></i>
       </div>
       <div class='message-content'>
+      <div>
       <p>${message.content}</p>
+      <div class='attachments'></div>
+      </div>
+      <small class='send-time'>${Tools.formatSendingTime(message.date)}</small>
       </div>
       <br>
     `;
@@ -237,7 +245,7 @@ class DOM {
         let fileLink = await this.getFileBlock(message.attachments[i], true);
         chatTab
           .querySelector(
-            'div[data-message-id="' + message.id + '"] .message-content'
+            'div[data-message-id="' + message.id + '"] .message-content .attachments'
           )
           .appendChild(fileLink); // Append the link to the document body or any other suitable location
       }
@@ -470,13 +478,6 @@ class DOM {
         }
       };
     }
-    console.log(
-      "chatBody.scrollTop + chatBody.clientHeight >= chatBody.scrollHeight - threshold"
-    );
-    console.log(
-      chatBody.scrollTop + chatBody.clientHeight >=
-        chatBody.scrollHeight - threshold
-    );
     return (
       chatBody.scrollTop + chatBody.clientHeight >=
       chatBody.scrollHeight - threshold
