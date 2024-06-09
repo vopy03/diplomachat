@@ -20,13 +20,21 @@ class User {
     // if sender is empty or has 3 or less symbols
     let sender = DOM.elems.senderInput.value.trim();
     if (!sender || sender.length < 3) {
-      Tools.showNotification("Please enter a valid login name. (minimal length 3 symbols)", "warning");
+      Tools.showNotification(
+        "Please enter a valid login name. (minimal length 3 symbols)",
+        "warning"
+      );
       return;
     }
     sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
     if (sender) {
       const payload = JSON.stringify({ type: "set_sender", sender });
-      socket.send(payload);
+      if(socket.readyState === 3) {
+        Tools.showNotification("Disconnected from websocket. Reload page.");
+        return;
+      }
+      socket.send(payload)
+
       // DOM.elems.senderInput.disabled = true;
       // DOM.elems.setSenderButton.disabled = true;
       // DOM.elems.senderInput.classList.add("disabled");
@@ -39,7 +47,10 @@ class User {
 
   static getSettings() {
     let passwordRequired = false;
-    if(DOM.get("#passwordSetting").checked && DOM.get('#userPassword').trim()) {
+    if (
+      DOM.get("#passwordSetting").checked &&
+      DOM.get("#userPassword").value.trim()
+    ) {
       passwordRequired = true;
     }
     return { passwordRequired };

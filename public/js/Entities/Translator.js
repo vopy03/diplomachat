@@ -70,6 +70,7 @@ class Translator {
       "not found or not connected.": "не знайдений або не під'єднаний.",
       "entered the correct password.\nNow he can communicate with you!": "ввів правильний пароль.\nТепер він може спілкуватися з вами!",
       "You can't add yourself": "Ви не можете додати себе",
+      "Disconnected from websocket. Reload page.": "Від'єднані від websocket. Перезавантажте сторінку.",
     },
   };
   static languages = {

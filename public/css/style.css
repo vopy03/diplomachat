@@ -384,6 +384,9 @@ a {
   max-height: 55vh;
   padding-block: 16px;
   padding-inline: 8px;
+  @media (max-width:992px) {
+    max-height: 77vh;
+  }
 }
 
 ::-webkit-scrollbar {

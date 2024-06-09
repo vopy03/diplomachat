@@ -358,9 +358,6 @@ class DOM {
   }
 
   static selectChatTab(hashName) {
-    if(!hashName) {
-      return;
-    }
     this.createChatTabs();
     this.elems.chat.querySelectorAll(".chat-tab").forEach((tab) => {
       tab.classList.remove("active");
