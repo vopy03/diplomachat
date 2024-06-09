@@ -20,7 +20,7 @@ class User {
     // if sender is empty or has 3 or less symbols
     let sender = DOM.elems.senderInput.value.trim();
     if (!sender || sender.length < 3) {
-      Tools.showNotification("Please enter a valid login name.", "warning");
+      Tools.showNotification("Please enter a valid login name. (minimal length 3 symbols)", "warning");
       return;
     }
     sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
@@ -38,7 +38,11 @@ class User {
   }
 
   static getSettings() {
-    return { passwordRequired: DOM.get("#passwordSetting").checked };
+    let passwordRequired = false;
+    if(DOM.get("#passwordSetting").checked && DOM.get('#userPassword').trim()) {
+      passwordRequired = true;
+    }
+    return { passwordRequired };
   }
   static checkPassword(password) {
     return password === DOM.get("#userPassword").value;

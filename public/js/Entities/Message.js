@@ -422,11 +422,14 @@ class Message {
     } else {
       App.funqueue = [];
       Tools.showNotification(
-        `Recipient ${DOM.elems.recipientInput.value} not found or not connected.`,
+        `${Translator.trans('Recipient')} ${DOM.elems.recipientInput.value}  ${Translator.trans('not found or not connected.')}`,
         "warning"
       );
-      DOM.elems.recipientInput.value = "";
-      Recipient.remove(data.sender);
+      console.log(data)
+      // DOM.elems.recipientInput.value = "";
+      Recipient.remove(data.recipient);
+      DOM.updateUserList();
+      DOM.selectChatTab('');
     }
   }
   static async handleSetSender(data) {
@@ -481,7 +484,7 @@ class Message {
       }
       let alert = document.createElement("div");
       alert.classList.add("alert", "alert-success");
-      alert.innerHTML = `User ${DOM.elems.addUserInput.value} is online!`;
+      alert.innerHTML = `${Translator.trans('User')} ${DOM.elems.addUserInput.value} ${Translator.trans('is online!')}`;
       DOM.get(".modal-body.add-user").appendChild(alert);
     } else {
       DOM.elems.addUserBtn.disabled = true;
@@ -489,7 +492,7 @@ class Message {
       if (DOM.elems.addUserInput.value.trim()) {
         let alert = document.createElement("div");
         alert.classList.add("alert", "alert-danger");
-        alert.innerHTML = `User ${DOM.elems.addUserInput.value} not found or offline`;
+        alert.innerHTML = `${Translator.trans('User')} ${DOM.elems.addUserInput.value} ${Translator.trans('not found or offline')}`;
         DOM.get(".modal-body.add-user").appendChild(alert);
       }
     }
@@ -546,7 +549,7 @@ class Message {
         );
         recipient.sentPassword = message.password;
         DOM.updateUserList();
-        Tools.showNotification(recipient.getName() + " entered the correct password.\nNow he can communicate with you!", "success");
+        Tools.showNotification(recipient.getName() + " "+Translator.trans("entered the correct password.\nNow he can communicate with you!"), "success");
       } else {
         // incorrect password
         // send message about unsuccessful pass entering

@@ -171,6 +171,7 @@ wss.on("connection", (connection, req) => {
             JSON.stringify({
               type,
               status: false,
+              recipient: recipient,
               message: `Recipient ${recipient} not found or not connected.`,
             })
           );

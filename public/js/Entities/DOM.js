@@ -2,6 +2,7 @@ import User from "./User.js";
 import Message from "./Message.js";
 import Recipient from "./Recipient.js";
 import Tools from "./Tools.js";
+import Translator from "./Translator.js";
 
 class DOM {
   static elems = {};
@@ -127,7 +128,7 @@ class DOM {
       if (this.elems.addUserInput.value == User.login) {
         let alert = document.createElement("div");
         alert.classList.add("alert", "alert-warning");
-        alert.innerHTML = `You can't add yourself`;
+        alert.innerHTML = `${Translator.trans("You can't add yourself")}`;
         DOM.get(".modal-body.add-user").appendChild(alert);
         return;
       }
@@ -357,6 +358,9 @@ class DOM {
   }
 
   static selectChatTab(hashName) {
+    if(!hashName) {
+      return;
+    }
     this.createChatTabs();
     this.elems.chat.querySelectorAll(".chat-tab").forEach((tab) => {
       tab.classList.remove("active");
@@ -536,7 +540,9 @@ class DOM {
     passwordForm.classList.add("password-form");
     passwordForm.insertAdjacentHTML(
       "beforeend",
-      `<div class="form-floating mb-3">
+      `
+      <p class="d-flex align-items-center gap-3"><i class="material-icons">info</i>In order to communicate with this user, you need to enter a password. Or you can wait until that user sends a message to you.</p>
+      <div class="form-floating mb-3">
       <input type="password" class="form-control password-field" data-recipient-hash='${chatTab.dataset.chatId}' placeholder="Password">
       <label for="passwordInput">Password</label>
     </div>
@@ -556,6 +562,7 @@ class DOM {
         }
       });
     }
+    Translator.replaceTextNodes();
   }
 }
 

@@ -1,4 +1,5 @@
 import User from "./User.js";
+import Translator from "./Translator.js";
 
 class Tools {
   static async getAESEncryptionKey(key) {
@@ -101,6 +102,7 @@ class Tools {
         }, 5000);
       }, 100);
     }, 100);
+    Translator.replaceTextNodes();
   }
   static async sha256(message) {
     const encoder = new TextEncoder();

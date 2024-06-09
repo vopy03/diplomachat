@@ -5,6 +5,7 @@ import DiffieHellman from "./DiffieHellman.js";
 import User from "./User.js";
 import Message from "./Message.js";
 import DOM from "./DOM.js";
+import Translator from "./Translator.js";
 
 class App {
   static funqueue = [];
@@ -17,9 +18,11 @@ class App {
     window.Message = Message;
     window.DiffieHellman = DiffieHellman;
     window.DOM = DOM;
+    window.Translator = Translator;
     window.App = App;
     DOM.init();
     Message.init();
+    Translator.init();
   }
 }
 
