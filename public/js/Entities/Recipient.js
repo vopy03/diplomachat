@@ -12,10 +12,18 @@ class Recipient {
     this.publicKey = 0;
     this.isTyping = false;
     this.isOnline = true;
-    this.bgcolor = '#333';
+    this.bgcolor = "#333";
+    this.passwordRequired = false;
+    this.sentPassword = "";
+    this.trustMe = false;
+    this.userAdded = false;
   }
   static add(hashName, login = "", displayName = "") {
-    if (!Recipient.isRecipientIsset(hashName) && hashName && User.hashName != hashName) {
+    if (
+      !Recipient.isRecipientIsset(hashName) &&
+      hashName &&
+      User.hashName != hashName
+    ) {
       let recipient = new Recipient(hashName, login, displayName);
       recipient.bgcolor = Tools.getRandomColor();
       Recipient.recipients.push(recipient);
@@ -23,13 +31,13 @@ class Recipient {
     // if(Recipient.isRecipientIsset(User.hashName)) {
     //   Recipient.remove(User.hashName);
     // }
-    DOM.updateUserList()
+    DOM.updateUserList();
   }
   static remove(hashName) {
     Recipient.recipients = Recipient.recipients.filter(
       (recipient) => recipient.hashName !== hashName
     );
-    DOM.updateUserList()
+    DOM.updateUserList();
   }
   remove() {
     Recipient.remove(this.hashName);
@@ -41,6 +49,26 @@ class Recipient {
     return Recipient.recipients.find(
       (recipient) => recipient.hashName === hashName
     );
+  }
+  isTrusted() {
+    return DOM.get("#userPassword").value === this.sentPassword;
+  }
+  isTrustedByMe() {
+    // if User Trust recipient by sending first message to him. No pass neded for recipient
+    let messages = Message.getAllMessagesWithRecipient(this.hashName);
+    if(messages.length) {
+      return true
+    }
+    return false;
+  }
+  isTrustMe() {
+    return this.trustMe;
+  }
+  setLogin(login) {
+    this.login = login;
+  }
+  setDisplayName(displayName) {
+    this.displayName = displayName;
   }
   static getLogin(hashName) {
     return Recipient.getByHashName(hashName).login;
@@ -96,9 +124,7 @@ class Recipient {
     }
   }
   static isRecipientIssetByLogin(login) {
-    if (
-      Recipient.recipients.find((recipient) => recipient.login === login)
-    ) {
+    if (Recipient.recipients.find((recipient) => recipient.login === login)) {
       return true;
     } else {
       return false;
@@ -107,10 +133,6 @@ class Recipient {
   static getAllRecipientHashNames() {
     return this.recipients.map((recipient) => recipient.hashName);
   }
-
-  
-
-  
 }
 
 export default Recipient;

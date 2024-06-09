@@ -136,6 +136,22 @@ wss.on("connection", (connection, req) => {
           );
         }
       }
+      if(type === "check_profile_setings") {
+        const recipientConnection = connections.get(recipient);
+        if (
+          recipientConnection &&
+          recipientConnection.readyState === WebSocket.OPEN
+        ) {
+          recipientConnection.send(
+            JSON.stringify({
+              type,
+              sender: senderCode,
+              recipient: recipient,
+              data: data.data,
+            })
+          );
+        }
+      }
       if (type === "public_key_exchange") {
         const recipientConnection = connections.get(recipient);
         if (

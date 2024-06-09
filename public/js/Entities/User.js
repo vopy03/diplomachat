@@ -37,6 +37,13 @@ class User {
     }
   }
 
+  static getSettings() {
+    return { passwordRequired: DOM.get("#passwordSetting").checked };
+  }
+  static checkPassword(password) {
+    return password === DOM.get("#userPassword").value;
+  }
+
   static getName() {
     if (this.displayName) {
       return this.displayName;

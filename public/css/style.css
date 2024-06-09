@@ -410,3 +410,12 @@ a {
 .self-message {
   text-align: right;
 }
+
+
+/* password setting */
+.settings-section .password-content {
+  display: none;
+}
+.settings-section:has(#passwordSetting:checked) .password-content {
+  display: block;
+}

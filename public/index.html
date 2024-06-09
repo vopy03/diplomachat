@@ -74,6 +74,24 @@
             <label for="displayNamedesc">Visible name (optional)</label>
             <div id="loginDescribe" class="form-text">Visible name that other users will see</div>
           </div>
+          <div class="settings-section mt-5 mb-4">
+            <h6 class="d-flex align-items-center gap-2"><i class="material-icons">settings</i> Settings</h6>
+            <hr>
+            <div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="passwordSetting">
+                <label class="form-check-label" for="passwordSetting">Password</label>
+                <div id="passwordDescribe" class="form-text">The password that the user will need to enter when he wants to start communicating with you</div>
+              </div>
+            </div>
+            <div class="password-content mt-3">
+              <div class="form-floating mb-3">
+                <input id="userPassword" class="form-control" type="password" placeholder="some_login"
+                  aria-describedby="displayPassdesc" />
+                <label for="userPassword">Password</label>
+              </div>
+            </div>
+          </div>
           <button id="setSender" class="btn btn-primary">Set login</button>
         </div>
         <div class="main-tab p-5 ct-tab">

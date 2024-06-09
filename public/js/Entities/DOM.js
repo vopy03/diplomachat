@@ -152,6 +152,7 @@ class DOM {
     this.elems.addUserBtn.addEventListener("click", async () => {
       let hashName = await Tools.sha256(this.elems.addUserInput.value.trim());
       Recipient.add(hashName, this.elems.addUserInput.value.trim());
+      Recipient.getByHashName(hashName).userAdded = true;
       this.updateUserList();
       // close modal
       DOM.get('#exampleModal [data-bs-dismiss="modal"]').click();
@@ -245,7 +246,9 @@ class DOM {
         let fileLink = await this.getFileBlock(message.attachments[i], true);
         chatTab
           .querySelector(
-            'div[data-message-id="' + message.id + '"] .message-content .attachments'
+            'div[data-message-id="' +
+              message.id +
+              '"] .message-content .attachments'
           )
           .appendChild(fileLink); // Append the link to the document body or any other suitable location
       }
@@ -326,8 +329,13 @@ class DOM {
     Recipient.recipients.forEach((recipient) => {
       if (
         this.elems.chat.querySelector(`[data-chat-id="${recipient.hashName}"]`)
-      )
+      ) {
+        // only update elems
+        this.elems.chat
+          .querySelector(`[data-chat-id="${recipient.hashName}"]`)
+          .querySelector(".chat-tab-title").innerHTML = recipient.getName();
         return;
+      }
       this.elems.chat.innerHTML += `<div class="chat-tab" data-chat-id="${
         recipient.hashName
       }">
@@ -392,11 +400,16 @@ class DOM {
   static updateUserList() {
     this.elems.usersList.innerHTML = "";
     Recipient.recipients.forEach((recipient) => {
-      this.elems.usersList.innerHTML +=
-        this.getRecipientUserListItem(recipient);
+      if (recipient.isTrusted() || recipient.userAdded) {
+        this.elems.usersList.innerHTML +=
+          this.getRecipientUserListItem(recipient);
+      }
       console.log(this.getRecipientUserListItem(recipient));
     });
-
+    this.createChatTabs();
+    Recipient.recipients.forEach((recipient) => {
+      Message.sendCheckProfileSettings(recipient.hashName);
+    });
     // init onuser click
     this.elems.usersList.querySelectorAll(".user").forEach((user) => {
       user.addEventListener("click", () => {
@@ -515,6 +528,33 @@ class DOM {
       if (!typing) {
         this.showNewMessageNotification(chat);
       }
+    }
+  }
+
+  static createPasswordTypingForm(chatTab) {
+    let passwordForm = document.createElement("div");
+    passwordForm.classList.add("password-form");
+    passwordForm.insertAdjacentHTML(
+      "beforeend",
+      `<div class="form-floating mb-3">
+      <input type="password" class="form-control password-field" data-recipient-hash='${chatTab.dataset.chatId}' placeholder="Password">
+      <label for="passwordInput">Password</label>
+    </div>
+    <button type="submit" class="password-user-submit btn btn-primary" data-recipient-hash='${chatTab.dataset.chatId}'>Submit</button>`
+    );
+    chatTab.querySelector(".password-form")?.remove();
+    if (!Recipient.getByHashName(chatTab.dataset.chatId).trustMe) {
+      chatTab.appendChild(passwordForm);
+      let submitBtn = passwordForm.querySelector(".password-user-submit");
+
+      submitBtn.addEventListener("click", (e) => {
+        let recipient = Recipient.getByHashName(e.target.dataset.recipientHash);
+        console.log(e.target.dataset.recipientHash);
+        console.log(recipient);
+        if (recipient) {
+          Message.sendUserPassword(submitBtn.dataset.recipientHash);
+        }
+      });
     }
   }
 }

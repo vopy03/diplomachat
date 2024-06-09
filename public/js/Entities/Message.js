@@ -28,43 +28,84 @@ class Message {
     this.reactions = reactions;
     this.date = date;
     this.seen = seen;
-    this.encryptedContent = "";
   }
 
   static init() {
     socket.addEventListener("message", async ({ data }) => {
-      if (Tools.isJSON(data)) {
-        data = JSON.parse(data);
-        console.log(data);
-        if (data.type === "message") {
-          this.handleMessage(data);
-        }
-        if (data.type === "reaction") {
-          this.handleReaction(data);
-        }
-        if (data.type === "disconnect_notification") {
-          this.handleDisconnectNotification(data);
-        }
-        if (data.type === "public_key_exchange") {
-          this.handlePublicKeyExchange(data);
-        }
-        if (data.type === "set_sender") {
-          this.handleSetSender(data);
-        }
-        if (data.type === "public_vars") {
-          this.handlePublicVars(data);
-        }
-        if (data.type === "typing") {
-          this.handleTyping(data);
-        }
-        if (data.type === "stop_typing") {
-          this.handleStopTyping(data);
-        }
-        if (data.type === "user_online") {
-          this.handleUserOnline(data);
-        }
-      }
+      await this.handleSocketResponse(data);
     });
+  }
+
+  static getAllMessagesWithRecipient(hashName) {
+    return this.messages.filter(
+      (message) => message.recipient === hashName || message.sender === hashName
+    );
+  }
+  static async handleSocketResponse(data, message = false) {
+    if (Tools.isJSON(data) || typeof data === "object") {
+      if (typeof data === "string") {
+        data = JSON.parse(data);
+      }
+      console.log(data);
+      console.log(message);
+      if (data.type === "message") {
+        this.handleMessage(data);
+      }
+      if (data.type === "reaction") {
+        this.handleReaction(data);
+      }
+      if (data.type === "disconnect_notification") {
+        this.handleDisconnectNotification(data);
+      }
+      if (data.type === "public_key_exchange") {
+        this.handlePublicKeyExchange(data);
+      }
+      if (data.type === "set_sender") {
+        this.handleSetSender(data);
+      }
+      if (data.type === "public_vars") {
+        this.handlePublicVars(data);
+      }
+      if (data.type === "typing") {
+        this.handleTyping(data);
+      }
+      if (data.type === "stop_typing") {
+        this.handleStopTyping(data);
+      }
+      if (data.type === "user_online") {
+        this.handleUserOnline(data);
+      }
+      if (data.type === "check_profile_setings") {
+        this.handleCheckProfileSettings(data);
+      }
+
+      // message inner responses (encrypted)
+      if (data.type === "password_entering") {
+        await this.handlePasswordEntering(data, message);
+      }
+      if (data.type === "get_user_info") {
+        this.handleGetUserInfo(data, message);
+      }
+    }
+  }
+  static async encrypt(message, recipientHashName) {
+    if (typeof message === "object") {
+      message = JSON.stringify(message);
+    }
+    message = await Encryptor.encrypt(
+      message,
+      DiffieHellman.sharedKeys[recipientHashName]
+    );
+    message = Tools.arrayBufferToBase64(message);
+    return message;
+  }
+  static async decrypt(message, senderHashName) {
+    message = Tools.base64ToArrayBuffer(message);
+    message = await Encryptor.decrypt(
+      message,
+      DiffieHellman.sharedKeys[senderHashName]
+    );
+    return message;
   }
   static async sendMessage() {
     let sender;
@@ -109,6 +150,7 @@ class Message {
       App.funqueue.push(Tools.wrapFunctionQueue(this.sendMessage, this));
       return;
     }
+
     let messageObj = Message.fromText(
       DOM.elems.msg.value.trim(),
       recipient,
@@ -250,17 +292,37 @@ class Message {
   }
 
   static async handleMessage(data) {
-    data.message = Tools.base64ToArrayBuffer(data.message);
-    data.message = await Encryptor.decrypt(
-      data.message,
-      DiffieHellman.sharedKeys[data.sender]
-    );
+    data.message = await Message.decrypt(data.message, data.sender);
     let message = "";
     console.log(data.message);
     if (Tools.isJSON(data.message)) {
       message = JSON.parse(data.message);
-      Recipient.getByHashName(data.sender).login = message.sender;
-      Recipient.getByHashName(data.sender).displayName = message.displayName;
+      if (message.type) {
+        console.log(message);
+        this.handleSocketResponse(message, data);
+        return;
+      }
+      let recipient = Recipient.getByHashName(data.sender);
+      // check if it`s a password
+      if (!recipient.isTrusted() && !recipient.isTrustedByMe()) {
+        socket.send(
+          JSON.stringify({
+            type: "message",
+            sender: User.hashName,
+            recipient: data.sender,
+            message: { type: "password_entering", status: false },
+          })
+        );
+        return;
+      }
+      if(!recipient.trustMe) {
+        recipient.trustMe = true;
+        // remove passwordField
+        let chatTab = DOM.get('.chat-tab[data-chat-id="'+recipient.hashName+'"]');
+        DOM.createPasswordTypingForm(chatTab)
+      }
+      recipient.login = message.sender;
+      recipient.displayName = message.displayName;
       console.log(message);
       message = Message.fromJSON(message.message);
       // if (message.attachments.length) {
@@ -275,10 +337,10 @@ class Message {
       let senderName = Recipient.getName(data.sender);
       console.log(message);
       console.log("From " + senderName + ": " + message.content);
-      Recipient.getByHashName(data.sender).isOnline = true;
+      recipient.isOnline = true;
 
       DOM.displayMessageInChat(message);
-      DOM.updateUserTypingMessage(Recipient.getByHashName(data.sender));
+      DOM.updateUserTypingMessage(recipient);
 
       Message.messages.push(message);
       DOM.updateUserList();
@@ -326,6 +388,29 @@ class Message {
         // Tools.showNotification(
         //   `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
         // );
+        console.log(Recipient.getByHashName(data.sender));
+        console.log(!Recipient.getByHashName(data.sender).login);
+        if (!Recipient.getByHashName(data.sender).login) {
+          // request name
+          let message = await Message.encrypt(
+            {
+              type: "get_user_info",
+              request: true,
+              login: User.login,
+              displayName: User.displayName,
+            },
+            data.sender
+          );
+          console.log(message);
+          socket.send(
+            JSON.stringify({
+              type: "message",
+              sender: User.hashName,
+              recipient: data.sender,
+              message,
+            })
+          );
+        }
       } else {
         // Tools.showNotification(
         //   `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
@@ -344,7 +429,7 @@ class Message {
       Recipient.remove(data.sender);
     }
   }
-  static handleSetSender(data) {
+  static async handleSetSender(data) {
     if (data.status) {
       User.hashName = data.sender;
       User.login = DOM.elems.senderInput.value.trim();
@@ -352,6 +437,11 @@ class Message {
       User.isServerApproved = true;
       DOM.toggleTab("main-tab");
       DOM.setUserInfoToStatusBar();
+      // hash user password
+      let userPasswordInput = DOM.get("#userPassword");
+      if (userPasswordInput.value) {
+        userPasswordInput.value = await Tools.sha256(userPasswordInput.value);
+      }
       // Tools.showNotification(data.message);
     } else {
       DOM.elems.setSenderButton.disabled = false;
@@ -404,6 +494,159 @@ class Message {
       }
     }
   }
+  static handleCheckProfileSettings(data) {
+    if (data.data.request) {
+      // check own settings and send it
+      this.sendOwnSettings(data);
+    } else {
+      // recieve settings and write it on recipient
+      let recipient = Recipient.getByHashName(data.sender);
+      recipient.passwordRequired = data.data.passwordRequired;
+      // if yes key exchange
+      console.log(data.data);
+      if (data.data.passwordRequired) {
+        console.log(!DiffieHellman.sharedKeys[recipient.hashName]);
+        if (!DiffieHellman.sharedKeys[recipient.hashName]) {
+          const payload = JSON.stringify({
+            type: "public_key_exchange",
+            sender: User.hashName,
+            recipient: data.sender,
+            key: Number(DiffieHellman.publicKey),
+          });
+          socket.send(payload);
+          App.funqueue.push(
+            Tools.wrapFunctionQueue(this.establishPasswordTyping, this, [data])
+          );
+        } else {
+          this.establishPasswordTyping(data);
+        }
+        return;
+      }
+    }
+  }
+
+  static async handlePasswordEntering(message, data) {
+    console.log(data);
+    console.log(message);
+    if (message.password) {
+      let recipient = Recipient.getByHashName(data.sender);
+      if (User.checkPassword(message.password)) {
+        // send message about successful pass entering
+        let messageSend = await Message.encrypt(
+          { type: "password_entering", status: true },
+          recipient.hashName
+        );
+        socket.send(
+          JSON.stringify({
+            type: "message",
+            sender: User.hashName,
+            recipient: recipient.hashName,
+            message: messageSend,
+          })
+        );
+        recipient.sentPassword = message.password;
+        DOM.updateUserList();
+        Tools.showNotification(recipient.getName() + " entered the correct password.\nNow he can communicate with you!", "success");
+      } else {
+        // incorrect password
+        // send message about unsuccessful pass entering
+        let message = await Message.encrypt(
+          { type: "password_entering", status: false },
+          recipient.hashName
+        );
+        socket.send(
+          JSON.stringify({
+            type: "message",
+            sender: User.hashName,
+            recipient: recipient.hashName,
+            message,
+          })
+        );
+      }
+    } else {
+      if (message.status) {
+        Tools.showNotification("Password entered successfully!", "success");
+        DOM.get(
+          '.chat-tab[data-chat-id="' + data.sender + '"] .password-form'
+        ).remove();
+        Recipient.getByHashName(data.sender).trustMe = true;
+      } else {
+        Tools.showNotification("Incorrect password. Try Again", "danger");
+        DOM.get(
+          '.chat-tab[data-chat-id="' + data.sender + '"] .password-form input'
+        ).value = "";
+      }
+    }
+  }
+  static async handleGetUserInfo(message, data) {
+    console.log(message);
+    console.log(data);
+    if (message.request) {
+      let message = await Message.encrypt(
+        {
+          type: "get_user_info",
+          request: false,
+          login: User.login,
+          displayName: User.displayName,
+        },
+        data.sender
+      );
+      socket.send(
+        JSON.stringify({
+          type: "message",
+          sender: User.hashName,
+          recipient: data.sender,
+          message,
+        })
+      );
+    } else {
+      Recipient.getByHashName(data.sender).setLogin(message.login);
+      Recipient.getByHashName(data.sender).setDisplayName(message.displayName);
+      DOM.updateUserList();
+    }
+  }
+
+  static establishPasswordTyping(data) {
+    console.log(data);
+    // user with password (recipient, not user):
+    if (!data.data.passwordRequired) {
+      return;
+    }
+    // get chat tab
+    let chatTab = DOM.get(`[data-chat-id="${data.sender}"]`);
+    console.log(chatTab);
+    DOM.createPasswordTypingForm(chatTab);
+  }
+
+  static async sendUserPassword(recipientHashName = "") {
+    let sender;
+    if (User.hashName) {
+      sender = User.hashName;
+    } else {
+      sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
+    }
+    let recipient;
+    if (recipientHashName) {
+      recipient = recipientHashName;
+    } else {
+      recipient = await Tools.sha256(DOM.elems.recipientInput.value.trim());
+    }
+    let password = await Tools.sha256(
+      DOM.get('.password-field[data-recipient-hash="' + recipient + '"]').value
+    );
+    let message = await Message.encrypt(
+      { type: "password_entering", password },
+      recipient
+    );
+    socket.send(
+      JSON.stringify({
+        type: "message",
+        sender,
+        recipient,
+        message,
+      })
+    );
+  }
 
   static async sendTypingNotification() {
     User.isTyping = true;
@@ -421,6 +664,50 @@ class Message {
         sender,
         recipient,
         message,
+      })
+    );
+  }
+  static async sendOwnSettings(data) {
+    let sender;
+    if (User.hashName) {
+      sender = User.hashName;
+    } else {
+      sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
+    }
+    const recipient = data.sender;
+    let passwordRequired = User.getSettings().passwordRequired;
+    const datasend = { request: false, passwordRequired };
+    socket.send(
+      JSON.stringify({
+        type: "check_profile_setings",
+        sender,
+        recipient,
+        data: datasend,
+      })
+    );
+  }
+  static async sendCheckProfileSettings(hashName = false) {
+    let sender;
+    if (User.hashName) {
+      sender = User.hashName;
+    } else {
+      sender = await Tools.sha256(DOM.elems.senderInput.value.trim());
+    }
+    let recipient = hashName;
+    if (!hashName) {
+      recipient = await Tools.sha256(DOM.elems.recipientInput.value.trim());
+    }
+    console.log(recipient);
+    if (Recipient.getByHashName(recipient).isTrusted() && Recipient.getByHashName(recipient).isTrustMe()) {
+      return;
+    }
+    const data = { request: true };
+    socket.send(
+      JSON.stringify({
+        type: "check_profile_setings",
+        sender,
+        recipient,
+        data,
       })
     );
   }
