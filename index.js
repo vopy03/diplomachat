@@ -311,6 +311,7 @@ function getRandomPrimeNum() {
   // Get a random prime number
   const randomIndex = Math.floor(Math.random() * primes.length);
   console.log(randomIndex);
+  console.log('line 314: ' + primes.length);
   const randomPrime = primes[randomIndex];
   // console.log("Random prime number:", randomPrime);
   return randomPrime;
