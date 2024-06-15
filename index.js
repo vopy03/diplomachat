@@ -9,12 +9,15 @@ const path = require("path"); // Import the path module
 // const tools = require("./tools.js");
 let primes = [];
 
-fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
+fs.readFile("./assets/primenums.txt", "utf-8", (err, data) => {
   if (err) {
     console.error("Error reading file:", err);
     return;
   }
   primes = data.split("\r\n");
+  console.log("Primes loaded");
+  console.log(primes);
+  console.log("Primes length: " + primes.length);
   changeParams();
 });
 
