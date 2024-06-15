@@ -297,10 +297,13 @@ function getPublicKnownVariables(k) {
 
   // console.log("Прості числа: " + primeNums);
   let primeNumber = primeNums[Math.floor(Math.random() * primeNums.length)];
-  // console.log("Вибране просте число (p): " + primeNumber);
+  console.log("Вибране просте число (p): " + primeNumber);
 
   let alphaA = getRandomPrimeNumSmallerThan(primeNumber);
-  // console.log("Число а (alpha): " + alphaA);
+  while(!alphaA) {
+    alphaA = getRandomPrimeNumSmallerThan(primeNumber);
+  }
+  console.log("Число а (alpha): " + alphaA);
 
   return { prime: primeNumber, generator: alphaA };
 }
@@ -322,5 +325,6 @@ function getRandomPrimeNumSmallerThan(num) {
     return smallerRandomPrime;
   } else {
     console.log("No prime number smaller than the first one found.");
+    return 0;
   }
 }
