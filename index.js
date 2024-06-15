@@ -86,8 +86,10 @@ const server = https.createServer(options, (req, res) => {
   });
 });
 
-server.listen(8000, () => {
-  console.log("Listen port 8000");
+const port = process.env.PORT || 443; // Use the PORT environment variable or default to 443
+
+server.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
 });
 
 const wss = new WebSocket.Server({ server });
@@ -108,7 +110,7 @@ wss.on("connection", (connection, req) => {
         message: msg,
       } = JSON.parse(data);
       data = JSON.parse(data);
-      console.log(data);
+      // console.log(data);
       if (type === "typing") {
         // Send typing notification to recipient
         sendTypingNotification(senderCode, recipient);
@@ -209,7 +211,7 @@ wss.on("connection", (connection, req) => {
             return;
           }
           connections.set(sender, connection);
-          console.log(sender);
+          // console.log(sender);
           connection.send(
             JSON.stringify({
               type: "set_sender",
@@ -289,16 +291,16 @@ function getPublicKnownVariables(k) {
   let primeNums = [];
   for (let i = 0; i < k; i++) {
     let res = getRandomPrimeNum();
-    console.log(res);
+    // console.log(res);
     primeNums.push(res);
   }
 
-  console.log("Прості числа: " + primeNums);
+  // console.log("Прості числа: " + primeNums);
   let primeNumber = primeNums[Math.floor(Math.random() * primeNums.length)];
-  console.log("Вибране просте число (p): " + primeNumber);
+  // console.log("Вибране просте число (p): " + primeNumber);
 
   let alphaA = getRandomPrimeNumSmallerThan(primeNumber);
-  console.log("Число а (alpha): " + alphaA);
+  // console.log("Число а (alpha): " + alphaA);
 
   return { prime: primeNumber, generator: alphaA };
 }
@@ -307,7 +309,7 @@ function getRandomPrimeNum() {
   // Get a random prime number
   const randomIndex = Math.floor(Math.random() * primes.length);
   const randomPrime = primes[randomIndex];
-  console.log("Random prime number:", randomPrime);
+  // console.log("Random prime number:", randomPrime);
   return randomPrime;
 }
 function getRandomPrimeNumSmallerThan(num) {
