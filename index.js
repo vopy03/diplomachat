@@ -22,8 +22,6 @@ fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
 
 let params = {};
 
-const index = fs.readFileSync("./public/index.html", "utf8");
-
 const options = {
   key: fs.readFileSync("key.pem"),
   cert: fs.readFileSync("cert.pem"),
