@@ -18,8 +18,6 @@ fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
   changeParams();
 });
 
-// console.log(primes)
-
 let params = {};
 
 const options = {
@@ -297,6 +295,7 @@ function getPublicKnownVariables(k) {
 
   // console.log("Прості числа: " + primeNums);
   let primeNumber = primeNums[Math.floor(Math.random() * primeNums.length)];
+  console.log(primeNums);
   console.log("Вибране просте число (p): " + primeNumber);
 
   let alphaA = getRandomPrimeNumSmallerThan(primeNumber);
@@ -311,6 +310,7 @@ function getPublicKnownVariables(k) {
 function getRandomPrimeNum() {
   // Get a random prime number
   const randomIndex = Math.floor(Math.random() * primes.length);
+  console.log(randomIndex);
   const randomPrime = primes[randomIndex];
   // console.log("Random prime number:", randomPrime);
   return randomPrime;
