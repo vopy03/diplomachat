@@ -14,8 +14,9 @@ fs.readFile("./assets/primenums.txt", "utf-8", (err, data) => {
     console.error("Error reading file:", err);
     return;
   }
-  primes = data.split("\r\n");
+  primes = data.split("\n");
   console.log("Primes loaded");
+  // console.log(data);
   console.log(primes);
   console.log("Primes length: " + primes.length);
   changeParams();
