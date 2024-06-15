@@ -6,10 +6,10 @@ const WebSocket = require("ws");
 const crypto = require("crypto");
 const path = require("path"); // Import the path module
 
-// const tools = require("./tools.js");
+// const tools = require("../tools.js");
 let primes = [];
 
-fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
+fs.readFile("../assets/primenums.txt", "utf8", (err, data) => {
   if (err) {
     console.error("Error reading file:", err);
     return;
@@ -23,8 +23,8 @@ fs.readFile("./assets/primenums.txt", "utf8", (err, data) => {
 let params = {};
 
 const options = {
-  key: fs.readFileSync("key.pem"),
-  cert: fs.readFileSync("cert.pem"),
+  key: fs.readFileSync("../key.pem"),
+  cert: fs.readFileSync("../cert.pem"),
 };
 
 // set interval Each 30 mins change iv for AES
@@ -41,12 +41,12 @@ function changeParams() {
 const server = https.createServer(options, (req, res) => {
   let filePath = req.url;
   if (!filePath.includes("node_modules")) {
-    filePath = "./public" + req.url;
+    filePath = "../public" + req.url;
   }
   // if filepath has "node_modules"
 
-  if (filePath === "./public/") {
-    filePath = "./public/index.html"; // Serve index.html by default from the public directory
+  if (filePath === "../public/") {
+    filePath = "../public/index.html"; // Serve index.html by default from the public directory
   }
 
   const extname = path.extname(filePath);
