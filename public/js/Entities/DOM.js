@@ -175,6 +175,26 @@ class DOM {
     this.elems.sendButton.addEventListener("click", () => {
       Message.sendMessage();
     });
+
+
+    let themeSwitcher = document.querySelector(".theme-switcher");
+    if (themeSwitcher) {
+      themeSwitcher.addEventListener("click", () => {
+        let body = document.querySelector("body");
+        if (body.getAttribute("data-bs-theme") === "dark") {
+          body.setAttribute("data-bs-theme", "light");
+          this.setTheme("light");
+        } else {
+          body.setAttribute("data-bs-theme", "dark");
+          this.setTheme("dark");
+        }
+      });
+    }
+
+    let theme = localStorage.getItem("theme");
+    if(theme) {
+      this.setTheme(theme);
+    }
   }
   static writeLine(text) {
     const line = document.createElement("div");
@@ -435,7 +455,7 @@ class DOM {
         .getName()
         .charAt(0)}" style="background-color:${recipient.bgcolor}"></i>
         </div>
-        <div class='message-content'>
+        <div class='message-content shadow'>
         <p><i>typing...</i></p>
         </div>
         <br></div>`
@@ -560,6 +580,23 @@ class DOM {
       });
     }
     Translator.replaceTextNodes();
+  }
+
+  static setTheme(theme) {
+    // set parameter to local storage
+    localStorage.setItem("theme", theme);
+    // set theme
+    let body = document.querySelector("body");
+    body.setAttribute('data-bs-theme', theme)
+  }
+  static getTheme() {
+    // get parameter from local storage
+    // if(not set)
+    if (!localStorage.getItem("theme")) {
+      localStorage.setItem("theme", "dark");
+    }
+
+    return localStorage.getItem("language");
   }
 }
 

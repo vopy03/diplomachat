@@ -21,11 +21,11 @@
 
 <body data-bs-theme="dark">
 
-  <header class="bg-dark text-white shadow">
+  <header class="shadow">
     <div class="container">
       <div class="d-flex flex-wrap align-items-center">
-        <a href="/" class="d-flex p-3 align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
-          <img src="img/logo.svg">
+        <a href="/" class="d-flex p-3 align-items-center mb-lg-0 text-decoration-none">
+          <img class='logo' src="img/logo.svg">
         </a>
         <div class="status-bar d-flex gap-3 ms-auto" id="status-bar">
           <div class="user-avatar-container">
@@ -37,11 +37,15 @@
           </div>
         </div>
         <div class="dropdown" id='lang-switcher-dropdown'>
-          <button id='lang-switcher' class="lang-switcher btn btn-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          <button id='lang-switcher' class="lang-switcher btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             Dropdown
           </button>
-          <ul class="dropdown-menu dropdown-menu-dark">
+          <ul class="dropdown-menu">
           </ul>
+        </div>
+        <div class="theme-switcher">
+          <i class="material-icons dark">dark_mode</i>
+          <i class="material-icons light">light_mode</i>
         </div>
 
         <!-- <div class="text-end ms-auto">
@@ -124,8 +128,7 @@
                 <div class="add-user-btn" data-bs-toggle="modal" data-bs-target="#exampleModal">
                   <div class="user d-flex p-2 mx-2">
                     <div class='user-avatar-container position-relative p-2'>
-                      <i class="user-avatar rounded-circle add-user-circle" data-letter="+"
-                        style="background-color:#777777"></i>
+                      <i class="user-avatar rounded-circle add-user-circle" data-letter="+"></i>
                     </div>
                     <div class="d-flex flex-column justify-content-center">
                       <span class="fs-5">Add user</span>

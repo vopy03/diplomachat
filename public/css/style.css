@@ -1,10 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+
 body {
-  background-color: #212529;
   /* color: #fff; */
   margin: 0;
   padding: 0;
   font-family: "Noto Sans", sans-serif;
+}
+
+body[data-bs-theme="dark"] {
+  background-color: #212529;
 }
 
 a {
@@ -210,6 +214,8 @@ a {
   line-height: 1;
 }
 
+
+
 .message {
   display: flex;
   opacity: 1;
@@ -358,6 +364,7 @@ a {
   font-size: 32px;
 }
 
+
 .user-avatar-container .user-avatar.add-user-circle:after {
   left: 50%;
   top: 50%;
@@ -384,6 +391,7 @@ a {
   max-height: 55vh;
   padding-block: 16px;
   padding-inline: 8px;
+
   @media (max-width:992px) {
     max-height: 77vh;
   }
@@ -419,32 +427,128 @@ a {
 .settings-section .password-content {
   display: none;
 }
+
 .settings-section:has(#passwordSetting:checked) .password-content {
   display: block;
 }
 
 .password-form {
   position: absolute;
+  width: 100%;
+  bottom: 0;
+  height: calc(100% - 62px);
+  padding: 20%;
+  padding-block: 15%;
+  backdrop-filter: blur(3px);
+  transition: .3s;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .form-floating {
     width: 100%;
-    bottom: 0;
-    height: calc(100% - 62px);
-    padding: 20%;
-    padding-block: 15%;
-    backdrop-filter: blur(3px);
-    transition: .3s;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    .form-floating {
-      width: 100%;
-    }
-    & > p {
-      color: #999;
-      font-size: 13px;
-    } 
+  }
+
+  &>p {
+    color: #999;
+    font-size: 13px;
+  }
 }
 
 .file-size {
   font-size: 13px;
+}
+
+.user-avatar.add-user-circle {
+  background-color: #777;
+}
+
+/* white theme */
+body:not([data-bs-theme="dark"]) {
+  header .logo {
+    filter: brightness(0);
+  }
+
+  .user-avatar.add-user-circle {
+    background-color: #f1f1f1;
+  }
+
+  .user-avatar:not(.add-user-circle)::after {
+    color: white;
+  }
+
+  .user:hover {
+    background-color: #e4e4e4;
+    border-radius: 4px;
+    transition: .2s;
+  }
+
+  #msg,
+  .message .message-content,
+  .status-bar:hover {
+    background-color: #f1f1f1;
+  }
+
+  #attachments-block .attachment {
+    background-color: #f1f1f1;
+  }
+
+  #attachments-block .attachment {
+    .remove-attachment-btn {
+      color: black;
+      cursor: pointer;
+    }
+  }
+
+  .message .attachment {
+    background-color: #e0e0e0;
+  }
+
+  .new-message-notification:after {
+    background-color: #fff;
+    content: 'New messages';
+    position: absolute;
+    top: calc(50%);
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 4px 12px;
+    border-radius: 18px;
+}
+
+  ::-webkit-scrollbar-track {
+    background-color: #d0d0d0;
+    border-radius: 8px;
+  }
+
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: #ececec;
+    border-radius: 8px;
+  }
+
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #d6d6d6;
+  }
+}
+
+.theme-switcher {
+  cursor: pointer;
+  padding-left: 12px;
+}
+.theme-switcher .dark {
+  display: none;
+}
+.theme-switcher .light {
+  display: block;
+}
+body:not([data-bs-theme="dark"]) {
+  .theme-switcher .dark {
+    display: block;
+  }
+  .theme-switcher .light {
+    display: none;
+  }
+
 }

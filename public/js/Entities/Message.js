@@ -362,14 +362,11 @@ class Message {
     }
   }
   static async handlePublicKeyExchange(data) {
-    console.log(data);
-    // recipientKey = data.key;
     if (data.status) {
       DiffieHellman.sharedKeys[data.sender] = await DiffieHellman.getSharedKey(
         data.key,
         DiffieHellman.privateKey
       );
-      // console.log(!Recipient.isRecipientIsset(data.sender));
       if (
         !Recipient.isRecipientIsset(data.sender) ||
         !Recipient.getByHashName(data.sender).publicKey
@@ -384,12 +381,6 @@ class Message {
         );
         Recipient.getByHashName(data.sender).setPublicKey(data.key);
         Recipient.getByHashName(data.sender).isOnline = true;
-        // console.log(Recipient.getByHashName(data.sender));
-        // Tools.showNotification(
-        //   `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
-        // );
-        console.log(Recipient.getByHashName(data.sender));
-        console.log(!Recipient.getByHashName(data.sender).login);
         if (!Recipient.getByHashName(data.sender).login) {
           // request name
           let message = await Message.encrypt(
@@ -401,7 +392,6 @@ class Message {
             },
             data.sender
           );
-          console.log(message);
           socket.send(
             JSON.stringify({
               type: "message",
@@ -411,10 +401,6 @@ class Message {
             })
           );
         }
-      } else {
-        // Tools.showNotification(
-        //   `Shared key ${DiffieHellman.sharedKeys[data.sender]}`
-        // );
       }
       if (App.funqueue.length > 0) {
         App.funqueue.shift()();
@@ -425,8 +411,6 @@ class Message {
         `${Translator.trans('Recipient')} ${DOM.elems.recipientInput.value}  ${Translator.trans('not found or not connected.')}`,
         "warning"
       );
-      console.log(data)
-      // DOM.elems.recipientInput.value = "";
       Recipient.remove(data.recipient);
       DOM.updateUserList();
       DOM.selectChatTab('');
