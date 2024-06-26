@@ -6,9 +6,7 @@
   "license": "MIT",
   "dependencies": {
     "bootstrap": "^5.3.3",
-    "miller-rabin": "^4.0.1",
     "picmo": "^5.8.5",
-    "prime-number-generator": "^1.0.0",
     "ws": "^8.13.0"
   },
   "readmeFilename": "README.md"
