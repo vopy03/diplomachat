@@ -88,7 +88,7 @@ const server = https.createServer(options, (req, res) => {
   });
 });
 
-const port = process.env.PORT || 443; // Use the PORT environment variable or default to 443
+const port = process.env.PORT || 8000; // Use the PORT environment variable or default to 443
 
 server.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
@@ -112,7 +112,7 @@ wss.on("connection", (connection, req) => {
         message: msg,
       } = JSON.parse(data);
       data = JSON.parse(data);
-      // console.log(data);
+      console.log(data);
       if (type === "typing") {
         // Send typing notification to recipient
         sendTypingNotification(senderCode, recipient);
